@@ -27,6 +27,12 @@ related:
 ## სესიების ჟურნალი (ახალი ზემოთ)
 
 <!-- auto: log:start -->
+<!-- ep:EP-2026-11-14-d9d82856:start -->
+### 2026-11-14 · [[EP-2026-11-14-d9d82856]] · ძრავის გასწორება და push chore/engine-fixes-ზე _(ავტო — გადასამოწმებელი)_
+- გაკეთდა: წაიშალა ხუთი მკვდარი `Write(...)` წესი `.claude/settings.json`-დან; `Edit(/memory/approvals.md)` deny სიაში დარჩა; drill გასწორდა `tools/gates/drill.py`-ში და orchestration ჯგუფის მეორე შემოწმებაშიც (ის ისევ ძველ `Write` ხაზს ელოდა); ჯგუფები wiring (71) და orchestration (68) მწვანეა; approvals.md-ში ჩაწერის სამივე გზა (Edit, Write, shell → `GUARD[B1]`) დაიბლოკა; gate.py არ იჭედება: სრულმა გაშვებამ 264 წმ-ში `GATES PASS` დადო; 60 წმ-იანმა ლიმიტმა drill შუაში გააჩერა; კოდი არ შეცვლილა; ყალბი გასაღების commit შეჩერდა gitleaks-ითაც და ძრავის საკუთარი სკანერითაც; სატესტო branch და ფაილი წაიშალა; შედგა hook-ების ინვენტარი (guard, pre-commit, stop_gate, sentinel, firstrun, episodic, statusline); progress.md განახლდა; commit `e4df3b9` branch-ზე `chore/engine-fixes` გაიგზავნა GitHub-ზე; main-ზე არაფერი შეხებია; PR ვერ გაიხსნა, რადგან `gh` შესული არ არის
+- შემდეგი: მფლობელმა გადატვირთოს Claude Code და გახსნას PR (https://github.com/nikarekhviashvili96-lab/market-intel/pull/new/chore/engine-fixes), CI `gates`-ის გავლის შემდეგ დაამერჯოს.
+<!-- ep:EP-2026-11-14-d9d82856:end -->
+
 ### 2026-11-14 · ძრავის გამართვა და დაცვების ცოცხალი ტესტი
 
 - გასწორდა: `.claude/settings.json`-დან მოიხსნა ხუთი `Write(...)` წესი, რომელსაც Claude Code არასდროს იყენებდა (გაფრთხილება „never matches"); დაცვა იგივე დარჩა, რადგან `Edit(...)` ფაილის შეცვლის ყველა ხელსაწყოს ფარავს. `tools/gates/drill.py`-მა იგივე წესი ორ ადგილას ისწავლა.
