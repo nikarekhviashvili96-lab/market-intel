@@ -3659,8 +3659,9 @@ def g_orchestration_stage1(tmp: Path, v: Path, real: str) -> None:
 
     def asks(tool: str, path: str) -> bool:
         """An ask rule of this tool whose path pattern covers the file (`**` read as any depth, as the rules mean it)."""
-        return any(r.startswith(tool + "(") and r.endswith(")")
-                   and fnmatch.fnmatchcase(path, r[len(tool) + 1:-1].replace("**", "*")) for r in ask)
+        tools = (tool, "Edit") if tool == "Write" else (tool,)  # an Edit(...) rule covers Write too
+        return any(r.startswith(t + "(") and r.endswith(")")
+                   and fnmatch.fnmatchcase(path, r[len(t) + 1:-1].replace("**", "*")) for t in tools for r in ask)
     expect(asks("Edit", "/orchestration/config.toml") and asks("Write", "/orchestration/config.toml"),
            "the owner's switches: an edit of orchestration/config.toml (enabled, stage, providers, budget) asks the owner",
            str([r for r in ask if "orchestration" in r]))
@@ -5365,8 +5366,10 @@ DISPATCHER_RULE = "Bash(bash .claude/hooks/py.sh orchestration/decide.py route*)
 
 def ask_covers(ask: list[str], tool: str, arg: str) -> bool:
     """An ask rule of this tool whose pattern covers arg (`**` and `*` read as anything, as the rules mean them)."""
-    return any(r.startswith(tool + "(") and r.endswith(")")
-               and fnmatch.fnmatchcase(arg, r[len(tool) + 1:-1].replace("**", "*")) for r in ask)
+    # Claude Code applies an Edit(...) rule to every file-editing tool, Write included
+    tools = (tool, "Edit") if tool == "Write" else (tool,)
+    return any(r.startswith(t + "(") and r.endswith(")")
+               and fnmatch.fnmatchcase(arg, r[len(t) + 1:-1].replace("**", "*")) for t in tools for r in ask)
 
 
 def window_drift(ask: list[str], dispatcher: bool | None = None) -> list[str]:
@@ -5453,7 +5456,7 @@ def g_wiring(tmp: Path, vault: Path) -> None:
     expect(not drift, "ADR-0015: the project's ask list holds no rule on the engine's files (hooks, the commit check, the "
            "approval script, the gates, skills, agents, rules); the permissions file, the money switches, installs, push "
            "and merge, deletions and paid runs still ask", "; ".join(drift)[:300])
-    gones = ["Edit(/.claude/settings.json)", "Write(/.claude/settings.local.json)", "Edit(/orchestration/config.toml)",
+    gones = ["Edit(/.claude/settings.json)", "Edit(/.claude/settings.local.json)", "Edit(/orchestration/config.toml)",
              "Bash(git push*)", "Bash(pip install*)", "Bash(rm *)", "Bash(codex *)"]
     if DISPATCHER.is_file():  # a copy with the dispatcher keeps its paid run behind a window (DISPATCHER_ASKED)
         gones.append(DISPATCHER_RULE)
