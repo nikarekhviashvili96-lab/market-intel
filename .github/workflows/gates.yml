@@ -7,8 +7,10 @@
 # release's own checksum list — and hands it to the secrets gate through GITLEAKS_BIN, so CI scans with gitleaks as the
 # person's machine does once gitleaks is installed. A download that fails or does not match stops the job; a GITLEAKS_BIN
 # that names no file makes the secrets gate INCONCLUSIVE — never a silent fall back to the engine's own scanner.
-# Only in this repository: a project made from the template skips these jobs (its commits are checked by
-# .githooks/pre-commit on the person's own machine), so nobody's Actions minutes are spent.
+# market-intel (owner, 2026-11-14): the template's guard that ran these jobs only in the kit's own repository is
+# removed — here the jobs run on every PR and every push to main, because the local pre-commit hook can be bypassed
+# and `gates` is the required status check of main's branch protection. The repository is public, so the minutes
+# are free.
 name: gates
 
 on:
@@ -25,7 +27,6 @@ concurrency:
 
 jobs:
   system:
-    if: github.repository == 'tornikebolokadze1-cyber/agent-foundation-kit'
     name: gates on ${{ matrix.os }}, Python ${{ matrix.python }}
     strategy:
       fail-fast: false
@@ -97,7 +98,7 @@ jobs:
           bash .claude/hooks/py.sh tools/gates/gate.py
 
   gates:
-    if: always() && github.repository == 'tornikebolokadze1-cyber/agent-foundation-kit'
+    if: always()
     needs: system
     runs-on: ubuntu-latest
     steps:

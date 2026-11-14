@@ -19,6 +19,8 @@ status: living
 - [ ] **P-004** დისპეჩერის ჩართვა (`[decision] enabled = true`): წინაპირობა — `orchestration/decide.py` ჯერ დასაწერია, მერე კალიბრაცია (~30 ნიმუში დავალება) და `OPENROUTER_API_KEY` `.env`-ში — [[ADR-0009-decision-model-dispatcher]]
 - [ ] **P-005** Haiku 5.5-ის ქართულის და კითხვა-შეჯამების ხარისხის გაზომვა, სანამ ის ასეთ საქმეს აიღებს: 10–20 დავალება ცნობილი პასუხით, Haiku vs Sonnet, სიზუსტე და ფასი — [[evals/README]], [[LESSONS]] L-006
 - [ ] **P-006** შეტყობინება, როცა ნებართვის მოთხოვნა გელოდება: Claude Code-ის `Notification` hook-ი (ეშვება, როცა აგენტს შენი ნებართვა სჭირდება) გამოგიგზავნის Windows-ის შეტყობინებას ან Telegram-ს — საათზე გრძელი მოლოდინი ქეშს აცივებს — [[ADR-0010-prompt-cache-and-cost]]
+- [ ] **P-007** gate.py-მ drill-ის დაწყებისას ერთი პროგრესის ხაზი დაბეჭდოს, რადგან ~5 წუთი ჩუმად მუშაობა გაჭედვას ჰგავს _(ავტო, [[EP-2026-11-14-d9d82856]] — მფლობელის გადასაწყვეტი)_
+- [ ] **P-008** main-ის დაცვა GitHub ruleset-ით (restrict deletions, block force pushes, require PR, require status check `gates`) _(ავტო, [[EP-2026-11-14-d9d82856]] — მფლობელის გადასაწყვეტი)_
 <!-- auto: proposals:end -->
 
 ## გადაწყვეტილი
