@@ -1,0 +1,19 @@
+# Pinned Python dependencies of the daily job and its tests (ADR-0100: every version exact, transitive ones too).
+# Direct (approved by the owner, 2026-11-15): pytest, httpx, psycopg[binary].
+# Install: {venv_python} -m pip install -r ingest/requirements.txt
+anyio==4.16.0
+certifi==2026.10.23
+colorama==0.4.6
+h11==0.16.0
+httpcore==1.0.9
+httpx==0.28.1
+idna==3.20
+iniconfig==2.3.1
+packaging==26.3
+pluggy==1.7.0
+psycopg==3.3.9
+psycopg-binary==3.3.9
+Pygments==2.21.0
+pytest==9.2.0
+typing_extensions==4.16.0
+tzdata==2026.6
