@@ -2,7 +2,7 @@
 id: ADR-0101
 type: adr
 title: Data and access model — point-in-time tables, series registry, roles, row-level security, sharing flag, AI role, daily schedule
-status: proposed
+status: accepted
 date: 2026-11-15
 deciders: owner (`/approve`); proposed by Claude Opus 5.5
 related:
