@@ -18,9 +18,10 @@ related:
 
 Goal: [[PLAN-0001-foundation-walking-skeleton]] done — every task ticked, every gate green, verifier pass, owner saw the live chart.
 
-- [ ] T1 Python foundation and gates · T2 fixture chart page · T3 live pooler proof
-- [ ] T4 schema and access rules · T5 ingest · T6 schedule and staleness
-- [ ] T7 site through RLS · T8 browser checks · T9 deploy and live proof
+- [x] T1 Python foundation and gates (PR #8)
+- [ ] B1 = T2 fixture chart page
+- [ ] B2a = T3 live pooler proof (after the owner's B2 checklist) · B2b = T4 schema and access rules + T5 ingest
+- [ ] B3 = T6 schedule and staleness + T7 site through RLS + T8 browser checks · B4 = T9 deploy and live proof
 <!-- auto: current-phase:end -->
 
 ### F3 — done
