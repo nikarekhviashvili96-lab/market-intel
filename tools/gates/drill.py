@@ -42,6 +42,7 @@ import sys
 import tempfile
 import threading
 import time
+import tomllib
 from datetime import date, datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -3053,7 +3054,9 @@ def g_staged_reads(tmp: Path, v: Path) -> None:
     write(s / "tools" / "checker.py", "x = 1\n")
     git(s, "add", "tools/checker.py")
     write(s / "tools" / "checker.py", "x = 2\n")
-    rc, out = at_commit(s, "drill", env={"DRILL_GROUPS": "findings"})  # should it run anyway, a short drill runs
+    at_commit_drill = write(tmp / "commit-drill-gates.toml", FLOOR_GATE.format(floor=999999))  # a drill gate at commit
+    rc, out = at_commit(s, "drill", env={"DRILL_GROUPS": "findings",  # should it run anyway, a short drill runs
+                                         "GATES_TOML": str(at_commit_drill)})
     expect(rc == 2 and re.search(r"INCONCLUSIVE\s+drill", out) is not None and "tools/checker.py" in out, "seeded: a "
            "checker file changed again after `git add` → the drill (it runs the working copy) is INCONCLUSIVE, naming it",
            out[-240:])
@@ -3945,6 +3948,77 @@ WITH_STAND_IN = ("import sys, pathlib; sys.path.insert(0, sys.argv[1]); import g
 FLOOR_ROW = "| 2026-11-07 10:00 +0400 | drill-floor | {old} → {new} | tools/gates/gates.toml | drill |\n"
 
 
+PUSH_GATE = FLOOR_GATE.replace("pre_commit = true\n", "pre_commit = false\npre_push = true\n")
+
+
+def g_floor_push(tmp: Path, root: Path, state: Path, gated, line, variant, base: str, ledger: Path) -> None:
+    """Owner, 2026-11-15: the drill runs at push (.githooks/pre-push) and in CI, not at commit. A push-only drill gate
+    still arms its cases (the floor stands, G7 lets it move there), at commit only its floor is held (LEDGER), and at
+    push it runs only when an engine file is pushed, and only on the very tree pushed (DRILL-NOT-HEAD,
+    DRILL-UNCOMMITTED)."""
+    push = variant("push", PUSH_GATE.format(floor=5))
+    rc, out, did = gated(root, push, line(5), "--pre-commit")
+    expect(rc != 1 and re.search(r"SKIP\s+drill", out) is not None and "runs at push" in out and "LEDGER" not in out
+           and not did, "control: a push-only drill gate (pre_commit = false, pre_push = true) at commit → SKIP, only "
+           "its floor held — not 'switched off'", out[-240:], kind="control")
+    rc, out, did = gated(root, variant("push-lower", PUSH_GATE.format(floor=4)), line(4), "--pre-commit")
+    expect(rc == 1 and "LEDGER: the drill's floor went down from 5 to 4" in out and not did, "seeded: a push-only drill "
+           "gate whose floor is lowered at commit, no owner row → FAIL, LEDGER (the floor is held at commit)", out[-240:])
+    p = fresh(tmp, "floor-push", root)
+    first = run(["git", "-C", str(p), "rev-parse", "HEAD"])[1].strip()
+    write(p / "tools/engine.py", "x = 1\n")
+    git(p, "add", "tools/engine.py")
+    git(p, "commit", "-q", "-m", "an engine change")
+    engine = run(["git", "-C", str(p), "rev-parse", "HEAD"])[1].strip()
+
+    def refs(local: str, remote: str) -> str:
+        return f"refs/heads/main {local} refs/heads/main {remote}\n"
+
+    rc, out, did = gated(p, push, line(5), "--pre-push", stdin=refs(engine, first))
+    expect(rc == 0 and "floor 5 held" in out and did, "control: at push, a pushed engine change on a clean tree → the "
+           "drill runs, floor held, PASS", out[-240:], kind="control")
+    write(p / "notes.md", "x\n")
+    git(p, "add", "notes.md")
+    git(p, "commit", "-q", "-m", "a note")
+    note = run(["git", "-C", str(p), "rev-parse", "HEAD"])[1].strip()
+    rc, out, did = gated(p, push, line(5), "--pre-push", stdin=refs(note, engine))
+    expect(rc != 1 and re.search(r"SKIP\s+drill", out) is not None and not did, "control: at push, only a note pushed → "
+           "SKIP, the drill does not run", out[-240:], kind="control")
+    rc, out, did = gated(p, push, line(5), "--pre-push", stdin=refs(engine, first))
+    expect(rc == 2 and "DRILL-NOT-HEAD" in out and not did, "seeded: at push, an engine commit that is not the checked-out "
+           "one → INCONCLUSIVE, DRILL-NOT-HEAD (the drill would prove another tree)", out[-240:])
+    write(p / "tools/engine.py", "x = 2\n")
+    rc, out, did = gated(p, push, line(5), "--pre-push", stdin=refs(note, first))
+    expect(rc == 2 and "DRILL-UNCOMMITTED" in out and not did, "seeded: at push, an engine file changed but not committed "
+           "→ INCONCLUSIVE, DRILL-UNCOMMITTED (the drill would prove the disk)", out[-240:])
+    shut = write(tmp / "floor-push-guard" / "tools/gates/gates.toml", FLOOR_GATE.format(floor=5)
+                 .replace("pre_commit = true\n", "pre_commit = true\npre_push = true\n"))
+    rc, err = guard(shut.parents[2], state, "Edit", {"file_path": str(shut), "old_string": "pre_commit = true",
+                                                      "new_string": "pre_commit = false"})
+    expect(rc == 0, "control: the drill gate moved from commit to push (pre_push = true stays) → allowed, its floor "
+           "still stands", f"rc={rc} {err[-200:]}", kind="control")
+    only = write(tmp / "floor-push-only" / "tools/gates/gates.toml", PUSH_GATE.format(floor=5))
+    rc, err = guard(only.parents[2], state, "Edit", {"file_path": str(only), "old_string": "pre_push = true",
+                                                      "new_string": "pre_push = false"})
+    expect(rc == 2 and "GUARD[G7]" in err, "seeded: a push-only drill gate taken off push too (runs nowhere) → "
+           "GUARD[G7]", f"rc={rc} {err[-200:]}")
+    hook = CODE / ".githooks/pre-push"
+    real = drill_floor_gate(CODE / "tools/gates/gates.toml")
+    expect(hook.is_file() and "gate.py --pre-push" in hook.read_text(encoding="utf-8") and bool(real)
+           and bool(real.get("enabled")) and bool(real.get("pre_commit") or real.get("pre_push")),
+           "control: this project's .githooks/pre-push runs `gate.py --pre-push`, and its drill gate runs at commit or "
+           "at push", f"hook={hook.is_file()} gate={real}", kind="control")
+
+
+def drill_floor_gate(gates: Path) -> dict | None:
+    """The one drill gate of a gates.toml file, read the way gate.py and the guard read it."""
+    try:
+        found = [g for g in tomllib.loads(gates.read_text(encoding="utf-8")).get("gate", []) if g.get("builtin") == "drill"]
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+    return found[0] if len(found) == 1 else None
+
+
 def g_floor(tmp: Path, state: Path) -> None:
     """ADR-0015: the drill holds exactly `floor` cases (ARMED plus ELSEWHERE) — fewer is a case taken out or a group no
     longer run, more is a floor that did not rise with the drill. A floor below the last commit's needs the owner's own new
@@ -3962,12 +4036,13 @@ def g_floor(tmp: Path, state: Path) -> None:
     git(root, "commit", "-q", "-m", "floor 5")
     stand_in, ran = write(tmp / "floor-drill.py", FLOOR_STAND_IN), tmp / "floor-drill-ran"
 
-    def gated(where: Path, gates: Path, last: str, *args: str, drill: Path | None = None) -> tuple[int, str, bool]:
-        """gate.py run in `where` with that gates.toml and the stand-in drill (or `drill`, a stand-in inside the project):
-        (exit, output, whether the drill ran)."""
+    def gated(where: Path, gates: Path, last: str, *args: str, drill: Path | None = None,
+              stdin: str | None = None) -> tuple[int, str, bool]:
+        """gate.py run in `where` with that gates.toml and the stand-in drill (or `drill`, a stand-in inside the project),
+        `stdin` as git's pre-push lines: (exit, output, whether the drill ran)."""
         ran.unlink(missing_ok=True)
         rc, out, err = check([PY, "-c", WITH_STAND_IN, str(CODE / "tools/gates"), str(drill or stand_in),
-                              *(args or ("--only", "drill"))],
+                              *(args or ("--only", "drill"))], stdin=stdin,
                              env={"GATE_ROOT": str(where), "GATES_TOML": str(gates), "DRILL_LINE": last, "DRILL_RAN": str(ran)})
         return rc, out + err, ran.exists()
 
@@ -4132,6 +4207,7 @@ def g_floor(tmp: Path, state: Path) -> None:
     rc, out, did = gated(root, kept, line(5), "--pre-commit")
     expect(rc == 1 and "no longer runs at commit" in out and not did, "seeded: the drill gate kept from the commit "
            "(pre_commit = false) → FAIL at commit", out[-240:])
+    g_floor_push(tmp, root, state, gated, line, variant, base, ledger)
     gone = variant("gone", '[[gate]]\nid = "lint"\nlevel = 1\nenabled = false\nreason = "drill"\nwhat = "drill"\ncmd = ["x"]\n')
     rc, out, did = gated(root, gone, line(5), "--pre-commit")
     expect(rc == 1 and "the drill gate is gone from gates.toml" in out and not did, "seeded: the drill gate taken out of "
@@ -4284,7 +4360,7 @@ def g_engine_line(tmp: Path) -> None:
     expect(rc == 0 and out == "", "control: only a note changed, no engine file → no line", out[-200:], kind="control")
     write(r / ".claude/hooks/guard.py", "# guard, weakened\n")
     rc, out = said()
-    expect(rc == 0 and out.startswith("🔧") and "not committed yet (the drill checks it at commit): ⚠ guard" in out,
+    expect(rc == 0 and out.startswith("🔧") and "not committed yet (the drill checks it at push): ⚠ guard" in out,
            "seeded: the guard changed, not committed → the line, ⚠ guard, 'not in a commit yet'", out[-240:])
     git(r, "add", "-A")
     git(r, "commit", "-q", "-m", "the guard, past the commit check")  # the drill's git runs no hook: no receipt

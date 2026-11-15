@@ -11,9 +11,9 @@ orchestration code. "Changed" means committed after --since — the commit the s
 given: only what is not committed yet; "-" when the session began before the first commit: every commit after the
 first) — or not committed yet, whoever changed it. A project's first commit is where the engine arrives, not a change
 to it, and before it there is nothing to compare with: no line.
-A commit passed the drill when the drill gate, at that commit, left a receipt for the tree it records (write_receipt —
-<git common dir>/engine-drill-receipts). A commit made without the commit check (pulled, rebased, `--no-verify`, a
-commit check that no longer runs the drill) has none and reads "not checked by the drill". ⚠ marks the guard and the
+A commit passed the drill when the drill gate, at that commit or at the push that sent it (the drill runs at push since
+2026-11-15), left a receipt for its tree (write_receipt — <git common dir>/engine-drill-receipts). A commit not yet
+pushed, or made without the checks (pulled, rebased, `--no-verify`), has none and reads "not checked by the drill". ⚠ marks the guard and the
 commit check (.githooks/): a change there can weaken every other check.
 Prints nothing when no engine file changed. Exit 0, or 2 when git could not answer (nothing is claimed then).
 """
@@ -41,7 +41,7 @@ WORDS = ((".claude/hooks/guard.py", "⚠ guard (the safety checker)"), (".githoo
          ("tools/backup_line.py", "backup reminder"),
          ("tools/approve.py", "owner's approval (/approve)"), ("orchestration/", "orchestration"))
 STATES = (("unchecked", "⚠ committed, but the drill has not checked it"),
-          ("pending", "not committed yet (the drill checks it at commit)"),
+          ("pending", "not committed yet (the drill checks it at push)"),
           ("checked", "committed and checked by the drill ✓"))
 
 
@@ -61,10 +61,12 @@ def receipts_file(root: Path) -> Path | None:
     return (p if p.is_absolute() else root / p) / RECEIPTS
 
 
-def write_receipt(root: Path) -> bool:
-    """At commit, once the drill passed: the tree the commit records (`git write-tree` — the index the commit takes,
-    GIT_INDEX_FILE included). Best effort: without a receipt the line only calls that commit unchecked."""
-    tree, where = (git(root, "write-tree") or "").strip(), receipts_file(root)
+def write_receipt(root: Path, rev: str | None = None) -> bool:
+    """Once the drill passed: at commit, the tree the commit records (`git write-tree` — the index the commit takes,
+    GIT_INDEX_FILE included); at push, the tree of the pushed commit `rev`. Best effort: without a receipt the line only
+    calls that commit unchecked."""
+    tree = (git(root, "rev-parse", f"{rev}^{{tree}}") if rev else git(root, "write-tree")) or ""
+    tree, where = tree.strip(), receipts_file(root)
     if not tree or where is None:
         return False
     try:

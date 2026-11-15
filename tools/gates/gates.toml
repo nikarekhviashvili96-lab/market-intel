@@ -2,6 +2,7 @@
 #
 # Run:   bash .claude/hooks/py.sh tools/gates/gate.py                 (every enabled gate, whole project)
 #        bash .claude/hooks/py.sh tools/gates/gate.py --pre-commit    (what .githooks/pre-commit runs)
+#        bash .claude/hooks/py.sh tools/gates/gate.py --pre-push      (what .githooks/pre-push runs: the drill)
 #        bash .claude/hooks/py.sh tools/gates/gate.py --files a b     (only these files; used by the Stop hook)
 #        bash .claude/hooks/py.sh tools/gates/gate.py --list          (every gate, the switched-off ones too)
 #
@@ -15,7 +16,7 @@
 #   2  behaviour: evals (Georgian quality, grounding, the domain invariants in REVIEW.md) — when the agent answers
 #   3  security & robustness: dependency audit, SAST, e2e — before any public pilot
 #
-# Rules for changing this file (an engine file: no permission window since ADR-0015 — the drill at commit guards it):
+# Rules for changing this file (an engine file: no permission window since ADR-0015 — the drill at push and in CI guards it):
 #   - never lower a threshold or disable a gate to make a red run green; fix the cause
 #   - every new gate gets a seeded-defect drill in tools/gates/drill.py (ADR-0006)
 #   - the owner's numbers: `max_bytes` (budget) only the owner raises, `floor` (drill) only the owner lowers
@@ -120,8 +121,9 @@ id = "drill"
 level = 0
 enabled = true
 builtin = "drill"
-floor = 1146
-pre_commit = true
+floor = 1155
+pre_commit = false  # owner, 2026-11-15: at commit only the floor is held (LEDGER); the drill itself runs at push
+pre_push = true     # .githooks/pre-push, when the pushed commits touch an engine file; CI runs it on every system
 stop = false
 what = "tools/gates/drill.py: every guard, hook and gate is broken on purpose and must catch it, and the drill holds exactly `floor` cases (ARMED plus ELSEWHERE): the floor rises with the drill, only the owner lowers it (`/approve floor N`, ADR-0015)"
 

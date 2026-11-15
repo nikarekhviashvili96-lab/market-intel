@@ -77,3 +77,10 @@ Every task is ticked; every gate is green; the `verifier` subagent returns `VERD
 - 2026-11-15 — T1: the `lint` and `unit` gates run `bash scripts/lint.sh` / `bash scripts/test.sh` (as §3 says);
   `scripts/venv_python.sh` finds the project's `.venv` on Windows and on Linux. Deliberate red run done: one
   expected value changed → `unit` FAIL (exit 1), reverted → PASS (exit 0).
+- 2026-11-15 — Delivery in batches instead of one PR per task (owner): B1 = T2; B2a = T3 alone — the live pooler login
+  is proven before anything else merges; B2b = T4 + T5; B3 = T6 + T7 + T8; B4 = T9. One branch and one PR per batch,
+  each merged before the next; inside a batch every task keeps its own commit and its own verify line. Why: delivery
+  speed; the CI `gates` check still runs on every PR.
+- 2026-11-15 — T3: the owner creates the `ingest_writer` login with its password in the Supabase SQL editor before
+  B2a (owner); the first migration does not create it — it fails clearly when the role is missing and only grants
+  its rights, so no password ever stands in a migration.
