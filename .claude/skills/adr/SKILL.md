@@ -17,8 +17,8 @@ argument-hint: "<the decision to record> | supersede ADR-NNNN"
    `bash .claude/hooks/py.sh orchestration/run.py arch --topic "…"` (stage 1: Opus ↔ Sonnet, one round; the owner is asked).
    Its `synthesis.md` becomes this ADR's draft.
 4. **Write** `docs/adr/ADR-NNNN-<english-kebab-slug>.md` (next free number — `docs/adr/README.md` names the
-   reserved ones; a project's own ADR has no `scope`, an engine rule gets `scope: engine` — ADR-0011), Georgian
-   prose, with frontmatter `id`, `type: adr`, `title`, `status: proposed`, `date`, `deciders`, `related` (quoted
+   reserved ones; a project's own ADR has no `scope`, an engine rule gets `scope: engine` — ADR-0011), prose
+   in the owner's language (`CLAUDE.md` → Language), with frontmatter `id`, `type: adr`, `title`, `status: proposed`, `date`, `deciders`, `related` (quoted
    wikilinks), and sections: კონტექსტი · გადაწყვეტილება · განხილული ალტერნატივები (≥2, each with why
    not) · შედეგები (+ / −) · დადასტურება (prefer a machine check). Copy the shape of
    `docs/adr/ADR-0001-foundation-and-sdlc-loop.md`.
@@ -29,5 +29,5 @@ argument-hint: "<the decision to record> | supersede ADR-NNNN"
    correct every line the decision changes — search the spec for each time, number and name it touches, not
    only the first — and ask for both approvals; the spec and the ADR must never contradict each other (L-018).
 7. **Index** — add a row to `docs/adr/README.md`; run `bash .claude/hooks/py.sh tools/context_graph.py check <file>`.
-8. **Tell the owner** in 2–4 Georgian sentences what is being decided and what it costs; the decision is
+8. **Tell the owner** in 2–4 sentences in the owner's language (`CLAUDE.md` → Language) what is being decided and what it costs; the decision is
    `/approve adr NNNN` or `/approve reject adr NNNN <reason>`.

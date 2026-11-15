@@ -30,6 +30,6 @@ Check:
    finding ("needs an ADR").
 7. **Open questions** — unknowns are listed as questions, not guessed.
 
-Output in Georgian (ids, paths, identifiers in English), using the FINDING format from REVIEW.md —
+Output in the owner's language (`CLAUDE.md` → Language) (ids, paths, identifiers in English), using the FINDING format from REVIEW.md —
 severity, where (section / REQ / AC id), claim, evidence (quote), fix. At most 12 findings, most severe
 first. Last line exactly: `VERDICT: ready | needs-changes | blocked`.

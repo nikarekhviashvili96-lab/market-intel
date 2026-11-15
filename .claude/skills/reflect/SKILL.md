@@ -15,7 +15,7 @@ argument-hint: "[optional focus]"
    or docs (→ correction).
 3. **Write each as a proposal** in `memory/PROPOSALS.md`: `- [ ] **P-NNN** <change> — why (episode
    links as evidence) — cost/risk — how we will know it worked (a machine check if possible)`.
-4. **Present the top 3** to the owner in Georgian, one sentence each, with your recommendation.
+4. **Present the top 3** to the owner in the owner's language (`CLAUDE.md` → Language), one sentence each, with your recommendation.
 5. **Only after an explicit yes:** implement it; for a new skill use `.claude/skills/<name>/SKILL.md`
    with a name that does not collide with `~/.claude/skills` (global skills win on a clash) and a
    description that says when to use it; add a drill for any script. Then mark the proposal `[x]` with

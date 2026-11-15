@@ -41,6 +41,6 @@ comes first (a spec cannot be approved before that — `approve.py` refuses and 
 6. **Check** — `bash .claude/hooks/py.sh tools/context_graph.py check <file>`; fix every error. From
    `review` on it also fails on a line left from the template, an empty cell in the requirements or criteria
    table, or more than 3 open questions.
-7. **Tell the owner** — 3–5 Georgian sentences: what the spec covers, what is out of scope, what they
+7. **Tell the owner** — 3–5 sentences in the owner's language (`CLAUDE.md` → Language): what the spec covers, what is out of scope, what they
    must decide; this summary is what they judge — never ask them to read the file. The approval is
    `/approve spec NNNN`. Planning (`/feature-plan`) starts only after it.

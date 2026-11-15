@@ -9,7 +9,7 @@ allowed-tools: Bash(bash .claude/hooks/py.sh orchestration/run.py status)
 
 !`bash .claude/hooks/py.sh orchestration/run.py status`
 
-Explain this to the owner in 2–4 Georgian sentences: is it enabled, which stage it is in and which model
+Explain this to the owner in 2–4 sentences in the owner's language (`CLAUDE.md` → Language): is it enabled, which stage it is in and which model
 takes which role, is the claude CLI ready (the codex CLI matters only from stage 2), what the round limits
 are, and what runs exist. A `CONFIG PROBLEM` line is a fault to report. If it is disabled, say that
 switching it on is their decision (proposal P-001, ADR-0005) and means setting `enabled = true` in

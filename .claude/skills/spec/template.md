@@ -1,7 +1,7 @@
 ---
 id: SPEC-NNNN
 type: spec
-title: <მოკლე სათაური ქართულად>
+title: <short title>
 status: draft
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
