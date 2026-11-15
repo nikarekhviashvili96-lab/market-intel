@@ -12,4 +12,4 @@ title: სპეციფიკაციები — ინდექსი დ�
 
 | სპეციფიკაცია | სათაური | სტატუსი |
 |---|---|---|
-| — | ჯერ არცერთი (პირველი იქნება SPEC-0001, ფაზა F2 — [[plan]]) | — |
+| [[SPEC-0001-foundation-walking-skeleton]] | Foundation and walking skeleton — US 10Y from FRED to one chart, with auth, RLS and sharing rules | review |
