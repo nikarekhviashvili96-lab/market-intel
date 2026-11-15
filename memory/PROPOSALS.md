@@ -22,6 +22,8 @@ status: living
 - [ ] **P-007** gate.py-მ drill-ის დაწყებისას ერთი პროგრესის ხაზი დაბეჭდოს, რადგან ~5 წუთი ჩუმად მუშაობა გაჭედვას ჰგავს _(ავტო, [[EP-2026-11-14-d9d82856]] — მფლობელის გადასაწყვეტი)_
 - [x] **P-008** main-ის დაცვა GitHub ruleset-ით (restrict deletions, block force pushes, require PR, require status check `gates`) _(ავტო, [[EP-2026-11-14-d9d82856]] — მფლობელის გადასაწყვეტი)_ — გაკეთდა 2026-11-14: მფლობელმა შექმნა ruleset `main-protection` ([[EP-2026-11-14-97f500f5]])
 - [ ] **P-009** guard-ის 20 წამიანი timeout დატვირთულ მანქანაზე (ფონზე მიმდინარე drill) ყოველ Edit/Bash-ს ბლოკავს (`onFailure: block`) — 2026-11-14-ს ზედიზედ 4-ჯერ; ვარიანტი: commit-ის gate ფონზე არ გავუშვათ სხვა სამუშაოსთან ერთად, ან guard-ის timeout გაიზარდოს (harness — მხოლოდ მფლობელის „კი"-თ) — [[ADR-0004-harness-permissions-hooks-guard]], [[EP-2026-11-14-97f500f5]]
+- [ ] **P-010** Log in the GitHub CLI once (`! gh auth login`, the owner's own step) so the agent can open PRs instead of handing over compare links — four PRs on 2026-11-15 needed the manual step ([[EP-2026-11-15-519db0a3]])
+- [ ] **P-011** The engine's skills (`/spec`, `/approve`, `/session-close`, builder check) still tell the agent to speak and write Georgian; align them with the owner's language rule in `CLAUDE.md` (2026-11-15) — harness change, only with the owner's yes ([[EP-2026-11-15-519db0a3]])
 <!-- auto: proposals:end -->
 
 ## გადაწყვეტილი

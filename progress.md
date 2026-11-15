@@ -16,15 +16,21 @@ related:
 <!-- auto: current-state:start -->
 ## ახლა
 
-- **ფაზა და მიზანი:** F2 — სპეციფიკაცია: v1 (Data, Overview, Economy US/Georgia, News) შემოწმებადი კრიტერიუმებით; [[intent]] დამტკიცებულია (0.5).
-- **ბოლოს გაკეთდა:** იდეა → ინტერვიუ → `/approve intent`; CI ჩაირთო ამ repo-ში, repo public, ruleset `main-protection` ([[EP-2026-11-14-97f500f5]]).
-- **შემდეგი ნაბიჯი:** ახალ სესიაში `/spec` → SPEC-0001; ჯერ intent §5-ის 8 ღია საკითხი და ფაქტები `docs/domain/`-ში.
-- **მფლობელის მოლოდინში:** PR `feat/intent` — `gates` ✓ და merge; გადატვირთვის შემდეგ შეამოწმოს, გაქრა თუ არა „auto mode on"; წინადადებები ([[PROPOSALS]]).
+- **Phase and goal:** F4 — build [[PLAN-0001-foundation-walking-skeleton]] (T1–T9) for [[SPEC-0001-foundation-walking-skeleton]]: DGS10 from FRED → Supabase → one chart, with auth, RLS and sharing rules.
+- **Last done:** intent 0.6, SPEC-0001, ADR-0100, ADR-0101 and PLAN-0001 approved; PRs #3–#5 merged ([[EP-2026-11-15-519db0a3]]).
+- **Next step:** T1 on branch `feat/t1-python-foundation` from updated `main` — one branch and PR per task, merged before the next.
+- **Waiting for the owner:** yes to switch on the `lint` and `unit` gates (T1); push and PR of `chore/session-close-2026-11-15`; auto-mode check (D-006); proposals P-010, P-011 ([[PROPOSALS]]).
 <!-- auto: current-state:end -->
 
 ## სესიების ჟურნალი (ახალი ზემოთ)
 
 <!-- auto: log:start -->
+### 2026-11-15 · [[EP-2026-11-15-519db0a3]] · SPEC-0001, ADR-0100/0101 and PLAN-0001 approved
+- Language rule in `CLAUDE.md`: English replies, new docs, commits and PRs; intent not translated.
+- Intent 0.6 (invited viewers, wider G9, en-US UI) re-approved; SPEC-0001 written, reviewed twice, approved.
+- Facts checked and recorded in `docs/domain/` (FRED, H.15, Supabase, Vercel, GitHub); ADR-0100 (stack) and ADR-0101 (data and access, pooler, 02:17 UTC) accepted; PLAN-0001 approved.
+- PRs #3, #4, #5 merged by the owner; `gh` still not logged in.
+
 <!-- ep:EP-2026-11-14-97f500f5:start -->
 ### 2026-11-14 · [[EP-2026-11-14-97f500f5]] · სესიის დახურვა და push _(ავტო — გადასამოწმებელი)_
 - გაკეთდა: სესია დაიხურა, ყველაფერი შენახულია commit `1d4d520`-ში; gate-ებმა გაიარა; ჩაიწერა ეპიზოდი, progress.md, plan.md და დავალებები; მომხმარებლის თხოვნით `feat/intent` დაიპუშა GitHub-ზე `1d4d520`-მდე; ლოკალური ვერსია GitHub-ისას ემთხვევა; PR-ში CI (`gates`) ხელახლა გაეშვება, დაახლოებით 10–25 წუთი
