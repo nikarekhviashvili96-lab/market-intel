@@ -3982,8 +3982,8 @@ def g_floor_push(tmp: Path, root: Path, state: Path, gated, line, variant, base:
     git(p, "commit", "-q", "-m", "a note")
     note = run(["git", "-C", str(p), "rev-parse", "HEAD"])[1].strip()
     rc, out, did = gated(p, push, line(5), "--pre-push", stdin=refs(note, engine))
-    expect(rc != 1 and re.search(r"SKIP\s+drill", out) is not None and not did, "control: at push, only a note pushed → "
-           "SKIP, the drill does not run", out[-240:], kind="control")
+    expect(rc == 0 and re.search(r"SKIP\s+drill", out) is not None and not did, "control: at push, only a note pushed → "
+           "SKIP, the drill does not run, and the push goes (exit 0)", out[-240:], kind="control")
     rc, out, did = gated(p, push, line(5), "--pre-push", stdin=refs(engine, first))
     expect(rc == 2 and "DRILL-NOT-HEAD" in out and not did, "seeded: at push, an engine commit that is not the checked-out "
            "one → INCONCLUSIVE, DRILL-NOT-HEAD (the drill would prove another tree)", out[-240:])

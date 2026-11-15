@@ -38,13 +38,14 @@ related:
 
 ## შენ გელოდება
 
-- [ ] D-014 — `gh auth login` in the browser (P-010, the owner's step) — verify: `gh auth status` shows the account
 - [ ] D-015 — the B2 checklist: Supabase project, sign-up off and 12-character passwords, `ingest_writer` login, access token, new FRED key and the old one revoked, four GitHub secrets, the project ref told to the agent (owner, 2026-11-15) — verify: the agent sees the four secret names in `gh secret list`
 
-- [ ] D-009 — push `chore/session-close-2026-11-15` and merge its PR (this session's memory) (owner, 2026-11-15) — verify: `main` holds EP-2026-11-15-519db0a3 closed
 - [ ] D-006 — Claude Code-ის გადატვირთვა: ქვედა ზოლზე „auto mode on" აღარ უნდა ჩანდეს; თუ ჩანს — `Shift+Tab` ან `claude --permission-mode default` — verify: ზოლზე default რეჟიმი
 
 ## დასრულებული
+
+- [x] D-009 — push `chore/session-close-2026-11-15` and merge its PR (owner, 2026-11-15) — PR #6 merged ✓ 2026-11-15 · 0817545
+- [x] D-014 — `gh auth login` in the browser (P-010, the owner's step) ✓ 2026-11-15 · owner
 
 - [x] D-007 — PLAN-0001 T1 on `feat/t1-python-foundation` (PLAN-0001 T1) — PR #8 merged ✓ 2026-11-15 · 86d0e36
 
