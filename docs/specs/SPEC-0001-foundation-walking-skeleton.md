@@ -34,7 +34,8 @@ This spec says what the result must do, not how it is built.
 
 - **Owner, morning check on the phone.** Logs in, opens the page, sees the latest 10Y yield with its date, the
   1-year chart, the source line — and can switch to 5Y or 10Y.
-- **Invited viewer.** The owner gives a colleague an account; they log in. While FRED's terms for `DGS10` are not
+- **Invited viewer.** The owner creates an account for a colleague with a temporary password and passes it on; they
+  log in. While FRED's terms for `DGS10` are not
   verified as shareable, they see the series title and "This data is not available to viewers yet" instead of the
   chart.
 - **Bad day — FRED is down or answers nonsense.** The daily job records a failed run and stores nothing from that
@@ -63,7 +64,7 @@ This spec says what the result must do, not how it is built.
 | REQ-002 | A series registry holds, for `DGS10`: ID, source, exact definition, units, frequency, transformation (none), stale threshold, citation text, and the source's sharing flag. Every label, unit, description and citation on the page comes from the registry; none is written by hand in the page | G2 | must |
 | REQ-003 | A source failure is isolated: the job records the failed run and keeps the stored data. A daily series is stale when its latest observation date is more than 2 US business days old; weekends and US federal holidays are not business days (holiday list kept in the repository with its source). When stale, the page shows "stale — last observation <date>, last successful update <as_of>" | G4 | must |
 | REQ-004 | One chart page, phone-width first: latest value and its observation date; 1Y / 5Y / 10Y range buttons (1Y default); units and description from the registry; the citation from the registry ("Board of Governors of the Federal Reserve System (US) … retrieved from FRED, Federal Reserve Bank of St. Louis", [[fred]]) with its retrieval date; FRED's API notice, a link to FRED's Terms of Use and the sentence that using the site means accepting them; stale badge when stale; light and dark mode; tap targets at least 44×44 px; text contrast at least 4.5:1 (WCAG AA). Opening the page reads only from the database and never calls an outside API | G6, G8 | must |
-| REQ-005 | Login is invite-only and email + password: public sign-up is off on the deployed project; accounts are created only by the owner; each account has a role, `owner` or `viewer`, stored in a table only the server-side role can write; a new account is `viewer`; the owner role is set once by hand; the database refuses a 6th viewer (max 5, non-commercial, [[vercel-hobby]]). The only personal data kept is each account's email and role; removing an account in the dashboard deletes its role row too; no analytics or tracking scripts | G9 | must |
+| REQ-005 | Login is invite-only and email + password: public sign-up is off on the deployed project; accounts are created only by the owner, by hand in the Supabase dashboard with a temporary password the owner passes on, and the owner resets viewers' passwords (the built-in email reaches only project team members — [[supabase-free-plan]]; an email service only in SPEC-0002 and only if needed — owner, 2026-11-15); each account has a role, `owner` or `viewer`, stored in a table only the server-side role can write; a new account is `viewer`; the owner role is set once by hand; the database refuses a 6th viewer (max 5, non-commercial, [[vercel-hobby]]). The only personal data kept is each account's email and role; removing an account in the dashboard deletes its role row too; no analytics or tracking scripts | G9 | must |
 | REQ-006 | Row-level security is on for every table from the first migration. Without login nothing is read or written. Writes come only from the server-side ingestion role. A viewer reads the registry entry (title, units, description, sharing flag) and run status of every series, but observations only of sources whose sharing flag is "shareable". The flag starts as "not shareable"; only the server-side role changes it, and only after the source's terms are verified in `docs/domain/` and the owner confirms. A viewer of non-shareable data sees "This data is not available to viewers yet". The owner reads everything | G9 | must |
 | REQ-007 | A dedicated database role for AI reads what the owner reads and cannot insert, update or delete anything. A database function `ai_run_allowed()` returns true only for a logged-in `owner`; every future AI feature must call it before it starts. No AI feature is built in this spec | G9 | must |
 | REQ-008 | CI runs build, tests and gitleaks on every PR; `main` accepts changes only through a PR whose checks are green (the repository is public, so this costs nothing). No secret is in the repository: the FRED key and the database service key live only in GitHub Secrets and the Vercel environment and never reach the browser. No service has a payment card attached | G7 | must |
@@ -115,7 +116,7 @@ No AI feature exists in this spec, so no eval set is written now; the AI role's 
 | Risk / assumption | Effect | Mitigation |
 |---|---|---|
 | FRED's `DGS10` page gives conflicting copyright signals ([[fred]]) | Viewers cannot see the chart | The source stays "not shareable" until resolved; the owner sees everything |
-| Supabase's built-in email reaches only project team members, 2 per hour ([[supabase-free-plan]]) | Viewers get no invite or reset email | The owner decides the viewer onboarding path before approval; the owner's own reset works |
+| Supabase's built-in email reaches only project team members, 2 per hour ([[supabase-free-plan]]) | Viewers get no invite or reset email | Owner creates viewer accounts by hand with a temporary password and resets them (owner, 2026-11-15); the owner's own reset email works |
 | Supabase's pause threshold is not published | The project pauses and the page shows nothing | Daily writes; warning email; data kept and the project can be resumed |
 | The US federal holiday list and H.15 publication delay are not yet verified | Wrong stale badge on a holiday | Holiday list from an official source, dated in `docs/domain/` at stage 4; AC-003 tests it |
 | Free-tier limits and terms change | Cost or access changes | Facts dated in `docs/domain/`; re-checked before SPEC-0002 |
@@ -123,14 +124,16 @@ No AI feature exists in this spec, so no eval set is written now; the AI role's 
 
 ## 9. ღია კითხვები — Open questions
 
-- `DGS10` sharing: the FRED series page says "copyrighted" while its tags say "Public Domain: Citation Requested".
-  Resolution: check the Federal Reserve Board's H.15 terms (or ask the data source) before SPEC-0002; until then the
-  source is "not shareable".
+- `DGS10` sharing: the Federal Reserve Board's terms allow copying and distribution with credit to the Board, but H.15
+  credits Treasury constant maturities to the U.S. Treasury, whose reuse terms are not yet confirmed ([[fred]]).
+  Resolution: the owner decides whether to flip the flag; until then the source is "not shareable".
 - FRED's missing-value marker `"."` is confirmed by the owner and secondary sources, not by FRED's API page.
   Resolution: the first recorded fixture (stage 4) confirms it; AC-001 and AC-003 fail on any other non-numeric value.
 
 ## Change history
 
+- 2026-11-15 — Owner's answers: viewer accounts created and reset by hand by the owner; G9 widened in the intent;
+  H.15 / Federal Reserve Board terms checked and recorded in [[fred]].
 - 2026-11-15 — Revised after the spec review (11 findings) and the builder check (5 questions): positive viewer path,
   AI permission function, validation of bad answers, stale threshold, citation and Terms sentence, accessibility
   numbers, personal data, deployed sign-up check, 6th-viewer refusal, key scan of the build.

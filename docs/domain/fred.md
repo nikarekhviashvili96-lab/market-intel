@@ -40,10 +40,29 @@ Source: <https://fred.stlouisfed.org/series/DGS10>, read 2026-11-15.
 - Suggested citation: "Board of Governors of the Federal Reserve System (US), Market Yield on U.S. Treasury
   Securities at 10-Year Constant Maturity, Quoted on an Investment Basis [DGS10], retrieved from FRED, Federal
   Reserve Bank of St. Louis; https://fred.stlouisfed.org/series/DGS10".
-- **Sharing status — conflicting, not resolved.** The page shows "Data in this graph are copyrighted. Please review
-  the copyright information in the series notes before sharing.", while the series tags read "Public Domain:
-  Citation Requested" and the notes contain no "Copyright" line. Until this is resolved (H.15 terms or the data
-  source's answer), the source stays **not shareable** with viewers.
+- **FRED's own signals conflict.** The page shows "Data in this graph are copyrighted. Please review the copyright
+  information in the series notes before sharing.", while the series tags read "Public Domain: Citation Requested"
+  and the notes contain no "Copyright" line.
+
+## Origin of DGS10: Federal Reserve H.15 and U.S. Treasury
+
+Checked 2026-11-15 on the official pages, at the owner's request.
+
+- Federal Reserve Board website terms, <https://www.federalreserve.gov/disclaimer.htm> (last update 2024-08-02):
+  "Unless otherwise indicated, information on Board's website is in the public domain and may be copied and
+  distributed without permission. Please cite to the Board as the source of the information." Material identified
+  as belonging to a non-Board source (e.g. under copyright) needs that source's permission: "Permission to use
+  copyrighted materials must be obtained from the original source and cannot be obtained from the Board."
+- H.15 release page, <https://www.federalreserve.gov/releases/h15/>: no copyright notice. Footnote for Treasury
+  nominal constant maturities: "Source: U.S. Treasury." Yields "are interpolated by the U.S. Treasury from the daily
+  yield curve"; market yields come from "composites of quotations obtained by the Federal Reserve Bank of New York."
+- **Not verified:** the U.S. Treasury's own reuse terms for its yield-curve data — the official home.treasury.gov
+  policy page was not found (the URL tried returned 404). A different Treasury site, Fiscal Data
+  (<https://fiscaldata.treasury.gov/about-us/>), allows commercial and non-commercial reuse, but that is a different
+  dataset and is only a secondary indication.
+- **Sharing flag: still "not shareable".** The Board's terms allow redistribution with credit to the Board; the
+  series is credited to the U.S. Treasury, whose terms are not yet confirmed. Flipping the flag is the owner's
+  decision.
 
 ## API: observations
 
