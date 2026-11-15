@@ -25,6 +25,18 @@ Read 2026-11-15 from GitHub's public REST API without a login
   to administrators. Confirmed in practice by AC-010 of [[SPEC-0001-foundation-walking-skeleton]] (a direct push to
   `main` is refused) or by `gh api repos/nikarekhviashvili96-lab/market-intel/rulesets/27259134` once `gh` is logged in.
 
+## Scheduled workflows
+
+Read 2026-11-15.
+
+- Source: <https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows> —
+  "The `schedule` event can be delayed during periods of high loads of GitHub Actions workflow runs."; "The shortest
+  interval you can run scheduled workflows is once every 5 minutes."; "Scheduled workflows will only run on the
+  default branch."; "By default, scheduled workflows run in UTC."
+- Source: <https://docs.github.com/en/actions/how-tos/manage-workflow-runs/disable-and-enable-workflows> —
+  "In a public repository, scheduled workflows are automatically disabled when no repository activity has occurred
+  in 60 days."
+
 ## Notifications for failed workflow runs
 
 Source: <https://docs.github.com/en/actions/concepts/workflows-and-actions/notifications-for-workflow-runs>, read
