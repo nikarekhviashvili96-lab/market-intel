@@ -2,7 +2,7 @@
 id: SPEC-0001
 type: spec
 title: Foundation and walking skeleton — US 10Y from FRED to one chart, with auth, RLS and sharing rules
-status: review
+status: approved
 created: 2026-11-15
 updated: 2026-11-15
 intent: "[[intent]]"
