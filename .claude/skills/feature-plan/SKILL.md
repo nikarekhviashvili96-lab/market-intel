@@ -30,7 +30,7 @@ missing. (`approve.py` refuses a plan on an unapproved spec, and the CHAIN-PLAN 
 4. List which gates must be green, which new gates or eval cases this plan adds (each with a drill),
    and the rollback path.
 5. Add a row to `docs/plans/README.md`; run `bash .claude/hooks/py.sh tools/context_graph.py check <file>`.
-6. Tell the owner in Georgian what will be built, in what order, and how they will see it working;
+6. Tell the owner in the owner's language (`CLAUDE.md` → Language) what will be built, in what order, and how they will see it working;
    the decision is `/approve plan NNNN`.
 
 ## B. Executing an approved plan
