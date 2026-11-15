@@ -89,6 +89,7 @@ Source: <https://fred.stlouisfed.org/docs/api/fred/series_observations.html>.
   vintages) — usable for point-in-time revisions.
 - **Missing observations are returned as the value `"."`** (e.g. US holidays). Source: the owner (2026-11-15) and
   secondary sources; FRED's own help page uses a holiday (2000-07-04) as its example of a missing daily value and its
-  blog says FRED does not impute missing values. The official observations page does not state the marker — it is
-  confirmed when the first recorded fixture is captured (stage 4). Rule: `"."` is stored as no observation (skipped
-  or null), never as 0.
+  blog says FRED does not impute missing values. The official observations page does not state the marker.
+  **Confirmed 2026-11-15 from FRED's own API answer** (`tests/fixtures/fred_dgs10.json`, `DGS10`, 2016-11-13 …
+  2026-11-13): 110 dates carry `"value": "."` — US holidays such as 4 July, Thanksgiving and Christmas — and no
+  other non-numeric value appears. Rule: `"."` is stored as no observation (skipped or null), never as 0.

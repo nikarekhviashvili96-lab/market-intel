@@ -2,7 +2,7 @@
 id: PLAN-0001
 type: plan
 title: Foundation and walking skeleton — build plan for SPEC-0001
-status: approved
+status: in-progress
 created: 2026-11-15
 updated: 2026-11-15
 spec: "[[SPEC-0001-foundation-walking-skeleton]]"
@@ -29,7 +29,7 @@ green, and the next task starts only after that merge (owner, 2026-11-15).
 
 ## 2. Tasks
 
-- [ ] T1 — Python foundation: create `.venv`, install `pytest`, `httpx`, `psycopg[binary]` with exact versions into `ingest/requirements.txt` (approved list); write failing tests, then `ingest/fred.py` that parses a recorded FRED `DGS10` response — `"."` becomes no observation (never 0), an error body, a non-numeric value, an empty series and a repeated date each make the parse fail; `scripts/lint.sh` and `scripts/test.sh` run the stack's commands; switch on the `lint` and `unit` gates in `tools/gates/gates.toml` (protected file — the owner's yes is asked in one sentence) and turn `unit` red once on purpose, then back (REQ-001, AC-001, AC-003) — verify: `bash .claude/hooks/py.sh tools/gates/gate.py` exits 0; you see `{venv_python} -m ingest.fred tests/fixtures/fred_dgs10.json` print the parsed count and the skipped holiday dates
+- [x] T1 — Python foundation: create `.venv`, install `pytest`, `httpx`, `psycopg[binary]` with exact versions into `ingest/requirements.txt` (approved list); write failing tests, then `ingest/fred.py` that parses a recorded FRED `DGS10` response — `"."` becomes no observation (never 0), an error body, a non-numeric value, an empty series and a repeated date each make the parse fail; `scripts/lint.sh` and `scripts/test.sh` run the stack's commands; switch on the `lint` and `unit` gates in `tools/gates/gates.toml` (protected file — the owner's yes is asked in one sentence) and turn `unit` red once on purpose, then back (REQ-001, AC-001, AC-003) — verify: `bash .claude/hooks/py.sh tools/gates/gate.py` exits 0; you see `{venv_python} -m ingest.fred tests/fixtures/fred_dgs10.json` print the parsed count and the skipped holiday dates
 - [ ] T2 — Web skeleton with a fixture chart: scaffold `web/` (Next.js, TypeScript, Tailwind, ESLint; `save-exact=true`; `package-lock.json` committed) and add `recharts`, `vitest`, `@vitejs/plugin-react`, `jsdom`, `@testing-library/react` (approved lists); failing Vitest tests first for en-US date and number formatting, the credit line and the tab title; a phone-first page that draws `DGS10` from the T1 recording with 1Y / 5Y / 10Y buttons, light and dark mode, the credit line "Source: U.S. Treasury via Federal Reserve H.15; retrieved from FRED, Federal Reserve Bank of St. Louis", FRED's API notice, Terms link and acceptance sentence; lint and test scripts extended to `web/` (REQ-004, REQ-009, AC-004, AC-006) — verify: gate green; you open `http://127.0.0.1:3000` on your laptop (`npm --prefix web run dev`), see the chart, switch dark mode, tap 1Y / 5Y / 10Y, and the browser tab shows the product name, not "Create Next App"
 - [ ] T3 — Live database and pooler proof (first database task, ADR-0101): add the Supabase CLI (`supabase`, dev dependency, approved); first migration creates `ingest_writer` and a throw-away table; a GitHub Actions workflow applies migrations to the live project after merge to `main` and a manual workflow connects as `ingest_writer.[PROJECT-REF]` through the session pooler, inserts one row and checks that update and delete are refused. **Owner steps first (accounts — cannot be undone by `git revert`):** create the Supabase Free project and, before anything else, switch public sign-up off and set the 12-character password minimum in its Auth settings — the API is public from the first minute (owner, 2026-11-15); set `ingest_writer`'s password in the SQL editor; add `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `INGEST_DATABASE_URL` as GitHub Secrets — I give the exact clicks, no secret goes through the chat (ADR-0101) — verify: the manual workflow's run on GitHub is green and its log shows "insert ok, update refused, delete refused"; if it fails, stop and write a superseding ADR
 - [ ] T4 — Schema and access rules: migrations for `core` and `markets` per ADR-0101 (sources, series registry with `DGS10` and its credit line, job runs, user roles with one owner and at most 5 viewers, observations, latest view, run-status view, append-only triggers, `core.app_role()`, `core.ai_run_allowed()`, `ai_reader`, sign-up off and 12-character passwords in `supabase/config.toml`); failing pytest database tests first for every cell of ADR-0101's access table, the roleless account, the 6th viewer, account deletion, the sharing-flag lock, the AI role, append-only, and the catalog check that every table has row-level security; CI starts the local Supabase on the Ubuntu job and sets `TEST_DATABASE_URL` inside the `gates` job (`.github/workflows/gates.yml`) (REQ-002, REQ-005, REQ-006, REQ-007, AC-007, AC-008, AC-009) — verify: gate green locally with the database tests reported as skipped; the CI `gates` check green with the same tests reported as run
@@ -68,3 +68,12 @@ Every task is ticked; every gate is green; the `verifier` subagent returns `VERD
 ## გადახრები
 
 (added during execution, old lines are never removed: `YYYY-MM-DD — what changed and why`)
+
+- 2026-11-15 — T1: the fixture `tests/fixtures/fred_dgs10.json` was recorded by the owner with
+  `ingest/record_fixture.py` (key from the owner's `.env`, which the agent may not read); the script redacts the key
+  in everything it prints and refuses to save an answer containing it (tests in `tests/test_record_fixture.py`).
+  Window 2016-11-13 … 2026-11-13: 2,499 observations, 110 dates marked `"."`; scanned for `api_key` and key-shaped
+  strings — 0 found.
+- 2026-11-15 — T1: the `lint` and `unit` gates run `bash scripts/lint.sh` / `bash scripts/test.sh` (as §3 says);
+  `scripts/venv_python.sh` finds the project's `.venv` on Windows and on Linux. Deliberate red run done: one
+  expected value changed → `unit` FAIL (exit 1), reverted → PASS (exit 0).

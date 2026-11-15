@@ -133,20 +133,18 @@ what = "tools/gates/drill.py: every guard, hook and gate is broken on purpose an
 [[gate]]
 id = "lint"
 level = 1
-enabled = false
-cmd = ["{venv_python}", "-m", "ruff", "check", "src"]
+enabled = true  # owner's yes, 2026-11-15 (PLAN-0001 T1)
+cmd = ["bash", "scripts/lint.sh"]
 pre_commit = true
-reason = "no project code yet — the stack ADR names the linter and its command (e.g. `npm run lint` for a Node stack)"
-what = "the stack's linter: lint errors are failures"
+what = "the stack's linter (ADR-0100): Python syntax of ingest/ and tests/; web/ joins in T2"
 
 [[gate]]
 id = "unit"
 level = 1
-enabled = false
-cmd = ["{venv_python}", "-m", "pytest", "-q"]
+enabled = true  # owner's yes, 2026-11-15 (PLAN-0001 T1)
+cmd = ["bash", "scripts/test.sh"]
 pre_commit = true
-reason = "no tests yet — switched on together with the first test (e.g. `npm test` for a Node stack)"
-what = "the stack's tests: every unit test passes"
+what = "the stack's tests (ADR-0100): pytest for the job, database tests skipped without TEST_DATABASE_URL; Vitest joins in T2"
 
 # ── Level 2 — behaviour evals (switched on when the agent answers questions) ──
 [[gate]]
