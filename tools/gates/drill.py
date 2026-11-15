@@ -501,11 +501,13 @@ def g_graph_spec(tmp: Path, vault: Path) -> None:
                kind="control")
     cases = [  # (label, old, new, marker, detail)
         ("the template's §1 instruction left in", "სტუმარმა ტელეფონზე სწრაფად უნდა იპოვოს ნომერი (G1, G2… `intent.md`-დან).",
-         "რა პრობლემას წყვეტს და რომელ მიზანს ემსახურება (G1, G2… `intent.md`-დან). ერთი აბზაცი.", "SPEC-TEMPLATE",
+         "What problem it solves and which goal it serves (G1, G2… from `intent.md`). One paragraph.", "SPEC-TEMPLATE",
          "template's text"),
         ("YYYY-MM-DD left in the history", "- 2026-01-01 — პირველი", "- YYYY-MM-DD — პირველი", "SPEC-TEMPLATE", "placeholder"),
         ("<სათაური> left in the heading", "# SPEC-0001: საცხობის საიტი", "# SPEC-0001: <სათაური>", "SPEC-TEMPLATE",
          "placeholder"),
+        ("the English template's <title> left in the heading", "# SPEC-0001: საცხობის საიტი", "# SPEC-0001: <title>",
+         "SPEC-TEMPLATE", "placeholder"),
         ("a requirement cell that is only …", "| REQ-001 | დარეკვის ღილაკი პირველ ეკრანზე | G1 | must |",
          "| REQ-001 | … | G2 | should |", "SPEC-TEMPLATE", "placeholder"),
         ("a criterion still reading Given … When … Then …", "Given 375 px When იხსნება Then ღილაკი ჩანს",
@@ -554,7 +556,7 @@ def g_graph_spec(tmp: Path, vault: Path) -> None:
            "error says so, and a placeholder is still caught", f"rc={rc} out={out[-300:]!r}")
     v = spec_vault(tmp, "spec-no-template-text", vault, template=False)
     edit(v / spec, "სტუმარმა ტელეფონზე სწრაფად უნდა იპოვოს ნომერი (G1, G2… `intent.md`-დან).",
-         "რა პრობლემას წყვეტს და რომელ მიზანს ემსახურება (G1, G2… `intent.md`-დან). ერთი აბზაცი.")
+         "What problem it solves and which goal it serves (G1, G2… from `intent.md`). One paragraph.")
     rc, out, _ = graph_check(v)
     expect(rc == 1 and "ERROR   SPEC-NO-TEMPLATE" in out, "seeded: no spec template and only the template's own text left "
            "in (no placeholder mark) → an error: the half of the check that could not run is not a pass (review Q6)",
@@ -566,7 +568,7 @@ def g_graph_spec(tmp: Path, vault: Path) -> None:
     # review round 2: /approve and the Stop-gate keep only the issues of the file they touch — the error is the spec's
     v = spec_vault(tmp, "spec-no-template-approve", vault, template=False)
     edit(v / spec, "სტუმარმა ტელეფონზე სწრაფად უნდა იპოვოს ნომერი (G1, G2… `intent.md`-დან).",
-         "რა პრობლემას წყვეტს და რომელ მიზანს ემსახურება (G1, G2… `intent.md`-დან). ერთი აბზაცი.")
+         "What problem it solves and which goal it serves (G1, G2… from `intent.md`). One paragraph.")
     rc, out, _ = graph_check(v, str(v / spec))
     expect(rc == 1 and "SPEC-NO-TEMPLATE" in out, "seeded: no spec template, the check limited to the spec's own file "
            "(as the Stop-gate runs it) → SPEC-NO-TEMPLATE", f"rc={rc} out={out[-300:]!r}")
@@ -594,24 +596,24 @@ def g_graph_stage(tmp: Path, vault: Path) -> None:
     idea = (intent, "# Intent\n\n", "# Intent\n\n## 1. ხედვა\n\n_დაწერე შენი იდეა — აქ ჩაიწერება._\nსაცხობის საიტი\n\n"
                                     "## 2. მიზნები\n\n")
     cases = [
-        ("intent §1 is still the template", [empty_idea], "ეტაპი 1/6", "დაწერე შენი იდეა"),
-        ("intent draft with an idea", [], "ეტაპი 1/6", "/approve intent"),
-        ("intent draft — the builder check before the approval", [], "ეტაპი 1/6", "მშენებლის შემოწმება"),
-        ("the idea written under the template's §1 placeholder", [idea], "ეტაპი 1/6", "/approve intent"),
-        ("intent accepted, spec draft", [accepted], "ეტაპი 2/6", "/approve spec 0001"),
-        ("spec draft — the builder check before it is shown", [accepted], "ეტაპი 2/6", "მშენებლის შემოწმება"),
-        ("spec approved, the project's ADR proposed", [accepted, spec_ok], "ეტაპი 3/6", "/approve adr 0001"),
-        ("spec approved, only an engine ADR (scope: engine) proposed — not offered", [accepted, spec_ok, engine], "ეტაპი 3/6",
-         "`/adr`-ით"),
-        ("project ADR accepted, plan draft", [accepted, spec_ok, adr_ok], "ეტაპი 4/6", "/approve plan 0001"),
-        ("plan approved", [accepted, spec_ok, adr_ok, (plan, "status: draft", "status: approved")], "ეტაპი 4/6",
-         "PLAN-0001 მიმდინარეობს"),
-        ("plan done", [accepted, spec_ok, adr_ok, (plan, "status: draft", "status: done")], "ეტაპი 5/6", "PLAN-0001 დასრულებულია"),
+        ("intent §1 is still the template", [empty_idea], "Stage 1/6", "Write your idea"),
+        ("intent draft with an idea", [], "Stage 1/6", "/approve intent"),
+        ("intent draft — the builder check before the approval", [], "Stage 1/6", "builder check"),
+        ("the idea written under the template's §1 placeholder", [idea], "Stage 1/6", "/approve intent"),
+        ("intent accepted, spec draft", [accepted], "Stage 2/6", "/approve spec 0001"),
+        ("spec draft — the builder check before it is shown", [accepted], "Stage 2/6", "builder check"),
+        ("spec approved, the project's ADR proposed", [accepted, spec_ok], "Stage 3/6", "/approve adr 0001"),
+        ("spec approved, only an engine ADR (scope: engine) proposed — not offered", [accepted, spec_ok, engine], "Stage 3/6",
+         "with `/adr`"),
+        ("project ADR accepted, plan draft", [accepted, spec_ok, adr_ok], "Stage 4/6", "/approve plan 0001"),
+        ("plan approved", [accepted, spec_ok, adr_ok, (plan, "status: draft", "status: approved")], "Stage 4/6",
+         "PLAN-0001 in progress"),
+        ("plan done", [accepted, spec_ok, adr_ok, (plan, "status: draft", "status: done")], "Stage 5/6", "PLAN-0001 is done"),
         # ADR-0013: the show and the pilot end with the owner's own word — the stage names it; a live plan is stage 6
         ("plan done — the owner's next word is /approve live", [accepted, spec_ok, adr_ok, (plan, "status: draft", "status: done")],
-         "ეტაპი 5/6", "/approve live 0001"),
+         "Stage 5/6", "/approve live 0001"),
         ("plan live (the owner said so) → run and observe", [accepted, spec_ok, adr_ok, (plan, "status: draft", "status: live")],
-         "ეტაპი 6/6", "PLAN-0001 ცოცხალშია"),
+         "Stage 6/6", "PLAN-0001 is live"),
     ]
     for label, edits, want, detail in cases:
         v = fresh(tmp, f"stage-{abs(hash(label))}", vault)
@@ -624,22 +626,26 @@ def g_graph_stage(tmp: Path, vault: Path) -> None:
     # Found in live runs: an agent that answered the last interview question without /intent loaded skipped the builder check and
     # offered the approval (2 of 2 live runs, 2026-10-23). With §7 empty, the stage names the check alone until the
     # history holds its line — in the block, in the brief's approvals list and in the status line.
-    seven = "\n## 7. ღია კითხვები\n\n`/intent` აქედან იწყებს.\n\n{q}## ცვლილებების ისტორია\n\n- 0.1 — 2026-01-01 — ჩონჩხი\n{h}"
+    seven = "\n## 7. ღია კითხვები\n\n`/intent` აქედან იწყებს.\n\n{q}## {hd}\n\n- 0.1 — 2026-01-01 — ჩონჩხი\n{h}"
     line_of = ("import sys; from pathlib import Path; sys.path.insert(0, sys.argv[1]); import context_graph as cg; "
                "print(cg.project_stage(cg.load(Path(sys.argv[2]))).status_line())")
     checked = "- 0.2 — 2026-01-02 — მშენებლის შემოწმება: 5 კითხვა — 2 უკვე ნაპასუხები, 2 თავად გადავწყვიტე, 1 ადამიანს ვკითხე\n"
-    interview = "ინტერვიუ — განზრახვა იწერება"
+    interview = "interview — the intent is being written"
+    checked_en = "- 0.2 — 2026-01-02 — Builder check: 5 questions — 2 answered, 2 decided, 1 asked\n"
     for label, q, h, want, offered, kind in (
             ("§7 still holds a question → the interview, the approval named", "1. Q1 — ვისთვის?\n\n", "", interview,
              True, "control"),
+            ("§7 empty, the English check line under `## Change history` → the approval offered", "", checked_en,
+             "waits for your approval", True, "seeded"),
             ("§7 empty, no builder-check line in the history → the check alone, the approval named nowhere", "", "",
-             "ახლა მხოლოდ მშენებლის შემოწმება", False, "seeded"),
-            ("§7 empty, the check's line in the history → the approval offered", "", checked, "შენს დამტკიცებას ელოდება",
+             "Now only the builder check", False, "seeded"),
+            ("§7 empty, the check's line in the history → the approval offered", "", checked, "waits for your approval",
              True, "seeded"),
             ("the check ran and put its question for the person into §7 → still the interview until it is answered",
              "1. Q8 — რამდენი ნაწარმია?\n\n", checked, interview, True, "control")):
         v = fresh(tmp, f"stage-d083-{abs(hash(label))}", vault)
-        edit(v / intent, "[[ADR-0001-demo]].\n", "[[ADR-0001-demo]].\n" + seven.format(q=q, h=h))
+        hd = "Change history" if h == checked_en else "ცვლილებების ისტორია"  # both languages are read
+        edit(v / intent, "[[ADR-0001-demo]].\n", "[[ADR-0001-demo]].\n" + seven.format(q=q, h=h, hd=hd))
         out = py("tools/context_graph.py", "--root", str(v), "stage")[1]
         brief = py("tools/context_graph.py", "--root", str(v), "brief", env={"EPISODIC_NESTED": None})[1]
         line = check([PY, "-c", line_of, str(CODE / "tools"), str(v)])[1]
@@ -651,14 +657,14 @@ def g_graph_stage(tmp: Path, vault: Path) -> None:
     for rel_ in (spec, plan):
         (v / rel_).unlink()
     rc, out, _ = py("tools/context_graph.py", "--root", str(v), "stage")
-    expect(rc == 0 and "ეტაპი 2/6" in out and "`/spec`" in out, "seeded: intent accepted, no spec yet → ეტაპი 2/6 (`/spec`)",
+    expect(rc == 0 and "Stage 2/6" in out and "`/spec`" in out, "seeded: intent accepted, no spec yet → Stage 2/6 (`/spec`)",
            out[:240])
     v = fresh(tmp, "stage-brief", vault)
     for rel_, old, new in (empty_idea, engine):
         edit(v / rel_, old, new)
     rc, out, _ = py("tools/context_graph.py", "--root", str(v), "brief", env={"EPISODIC_NESTED": None})
     ctx = json.loads(out).get("hookSpecificOutput", {}).get("additionalContext", "") if rc == 0 and out.strip() else ""
-    expect(ctx.startswith("## ეტაპი") and "/approve intent" not in ctx and "/approve adr 0001" not in ctx
+    expect(ctx.startswith("## Stage") and "/approve intent" not in ctx and "/approve adr 0001" not in ctx
            and "scope: engine" in ctx, "seeded: the SessionStart brief opens with the stage; an empty intent and an engine "
            "ADR are not offered for approval (the engine ADR gets its own line)", ctx[:240])
     rc, out, _ = py("tools/context_graph.py", "--root", str(v), "pending")
@@ -673,12 +679,12 @@ def g_graph_stage(tmp: Path, vault: Path) -> None:
              'intent: "[[intent]]"\n') + "body\n")
     rc, out, _ = py("tools/context_graph.py", "--root", str(v), "pending")
     odd = next((ln for ln in out.splitlines() if "SPEC-0002-0001" in ln), "")
-    expect(bool(odd) and "/approve spec 0001" not in odd and "id არასწორია" in odd, "seeded: a spec whose id is SPEC-0002-0001 "
+    expect(bool(odd) and "/approve spec 0001" not in odd and "the id is invalid" in odd, "seeded: a spec whose id is SPEC-0002-0001 "
            "is never offered as `/approve spec 0001` (that approves another document)", out[:300])
     v = fresh(tmp, "stage-bad-bytes", vault)
     (v / intent).write_bytes((v / intent).read_bytes().replace(b"# Intent\n", b"# Intent\n\n## 1. \xe1\xe3\n\nsome \x93idea\x94\n"))
     rc, out, err = py("tools/context_graph.py", "--root", str(v), "stage")
-    expect(rc == 0 and "ეტაპი 1/6" in out, "seeded: intent.md holding bytes that are not UTF-8 (a cp1252 quote) → the "
+    expect(rc == 0 and "Stage 1/6" in out, "seeded: intent.md holding bytes that are not UTF-8 (a cp1252 quote) → the "
            "stage is still read, no crash", (out + err)[-240:])
     v = fresh(tmp, "stage-scope", vault)
     edit(v / adr, "date: 2026-01-01\n", "date: 2026-01-01\nscope: engin\n")
@@ -713,9 +719,9 @@ def g_graph_kind(tmp: Path, vault: Path) -> None:
     edit(v / intent, *kind[1:])
     guide(v)
     out = stage(v)
-    expect("`docs/guides/website.md` §1" in out and "ჯერ ჩაწერე intent.md" not in out, "seeded: kind website → the "
+    expect("`docs/guides/website.md` §1" in out and "First write the project type into intent.md" not in out, "seeded: kind website → the "
            "interview names its guide (§1)", out[:300])
-    expect("ერთი კითხვა ერთ შეტყობინებაში" in out and "§7-ის შაბლონურ სიას ცვლის" in out,
+    expect("one question per message" in out and "they replace §7's template list" in out,
            "seeded: the interview asks one question per message, and the guide's questions replace §7's template list "
            "(journey D-050)", out[:400])
     rc, gout, _ = graph_check(v)
@@ -727,8 +733,8 @@ def g_graph_kind(tmp: Path, vault: Path) -> None:
     v = fresh(tmp, "kind-spec-review", vault)
     edit(v / intent, "status: draft", "status: accepted")
     out = stage(v)
-    expect("SPEC-0001 შენს გადახედვას ელოდება" in out and "CHECKPOINT commit" in out and "„გავაგრძელო?“-ს ნუ იკითხავ" in out
-           and "ჩატში" in out and "წაიკითხე `docs/specs" not in out and "ეს ბლოკი ყოველ ჯერზე" in out,
+    expect("SPEC-0001 waits for your review" in out and "CHECKPOINT commit" in out and 'do not ask "shall I continue?"' in out
+           and "in the chat" in out and "read `docs/specs" not in out and "This block is computed" in out,
            "seeded: a spec waits for the person → it is summed up in the chat (no 'read the file'), and after "
            "/approve the agent saves and goes on without asking; the block says it outranks older notes (journey D-050)",
            out[:400])
@@ -753,12 +759,12 @@ def g_graph_kind(tmp: Path, vault: Path) -> None:
         edit(v / rel_, old, new)
     checks(v, lint_on=False)
     out = stage(v)
-    expect("ჯერ ჩართე კოდის შემოწმებები" in out and "`unit` — პირველ ტესტთან ერთად" in out
-           and "ხელით რედაქტირებას ნუ სთხოვ" in out and "დაელოდე" not in out,
+    expect("First switch on the code checks" in out and "`unit` — with the first test" in out
+           and "do not ask them to edit it by hand" in out and "Wait —" not in out,
            "seeded: building with `lint` and `unit` both off → the agent switches the code checks on first (lint now, "
            "unit with the first test, never by the person's hand) and the person is not just told to wait", out[:300])
     checks(v, lint_on=True)
-    expect("ჯერ ჩართე კოდის შემოწმებები" not in stage(v), "control: a code check is on → no such note", stage(v)[:300],
+    expect("First switch on the code checks" not in stage(v), "control: a code check is on → no such note", stage(v)[:300],
            kind="control")
     edit(v / plan, "status: approved", "status: done")
     guide(v)
@@ -811,7 +817,7 @@ def g_approve(tmp: Path, vault: Path) -> Path:
            "seeded: spec before an accepted intent is refused, nothing written", out[:160])
     out = approve(v, "intent")
     expect(out.startswith("✅") and status(v / "intent.md") == "accepted", "control: /approve intent → accepted", out[:160], kind="control")
-    expect("ეტაპი 2/6" in out and "/approve spec 0001" in out,
+    expect("Stage 2/6" in out and "/approve spec 0001" in out,
            "seeded: after /approve intent the answer names the next stage (2/6) and its command", out[-200:])
     out = approve(v, "spec 1")
     expect(out.startswith("✅") and status(spec) == "approved", "control: /approve spec 1 → approved", out[:160], kind="control")
@@ -819,7 +825,7 @@ def g_approve(tmp: Path, vault: Path) -> Path:
     expect(out.startswith("✅") and status(v / "docs/plans/PLAN-0001-demo.md") == "approved", "control: /approve plan → approved", out[:160], kind="control")
     out = approve(v, "adr 1")
     expect(out.startswith("✅") and status(v / "docs/adr/ADR-0001-demo.md") == "accepted", "control: /approve adr 1 → accepted", out[:160], kind="control")
-    expect("ეტაპი 4/6" in out and "PLAN-0001" in out,
+    expect("Stage 4/6" in out and "PLAN-0001" in out,
            "seeded: after the project's first ADR the answer moves on to building (4/6, PLAN-0001)", out[-200:])
     rc, gout, _ = graph_check(v)
     expect(rc == 0, "control: after owner approvals the graph (LEDGER, CHAIN) is clean", gout[-200:], kind="control")
@@ -832,7 +838,7 @@ def g_approve(tmp: Path, vault: Path) -> Path:
            "nothing changes", out[:200])
     edit(plan_path, "status: approved", "status: done")
     out = approve(lv, "live 1 pilot over")
-    expect(out.startswith("✅") and status(plan_path) == "live" and "ეტაპი 6/6" in out,
+    expect(out.startswith("✅") and status(plan_path) == "live" and "Stage 6/6" in out,
            "control: /approve live on a done plan → live, the answer names stage 6", out[-240:], kind="control")
     rc, gout, _ = graph_check(lv)
     expect(rc == 0, "control: a live plan with its ledger row keeps the graph clean", gout[-200:], kind="control")
@@ -848,7 +854,7 @@ def g_approve(tmp: Path, vault: Path) -> Path:
     write(v / "docs/adr/ADR-0003-maybe.md", FM.format(body="id: ADR-0003\ntype: adr\ntitle: Maybe\nstatus: proposed\ndate: 2026-01-03\n") + "# x\n")
     out = approve(v, "reject adr 3 not now")
     expect(out.startswith("✅") and status(v / "docs/adr/ADR-0003-maybe.md") == "rejected", "control: reject adr → rejected", out[:160], kind="control")
-    expect("➡ ახლა: ეტაპი 4/6" in out, "seeded: after a reject the answer still names where the project stands", out[-200:])
+    expect("➡ ახლა: Stage 4/6" in out, "seeded: after a reject the answer still names where the project stands", out[-200:])
     out = approve(v, "adr 0001")
     expect(out.startswith("❌"), "seeded: approving an already superseded ADR is refused", out[:160])
     g_approve_stage_notes(tmp, vault)
@@ -1496,7 +1502,7 @@ def g_episodic(tmp: Path, vault: Path) -> None:
     rc, out, err = ep_cmd("start", {"session_id": SID, "source": "startup", "transcript_path": str(tp)})
     expect(ep.exists(), "SessionStart creates this session's episode", err[-160:])
     expect('"additionalContext"' in out and "DRILL-STATE-ქართული" in out and "DRILL-PHASE" in out,
-           "SessionStart injects progress 'ახლა' + plan phase (Georgian survives the Windows console)", out[:160])
+           "SessionStart injects progress 'Now' + plan phase (Georgian survives the Windows console)", out[:160])
     expect("DRILL-TODO-ქართული" in out, "SessionStart injects tasks/todo.md 'now/next' (the agent's concrete tasks)", out[-300:])
     expect("PROPOSALS.md`): 1" in out, "SessionStart counts exactly 1 open proposal", out[-300:])
     w = fresh(tmp, "episodic-printable", vault)  # review M7: text from files reaches the model without hidden characters
@@ -1505,7 +1511,7 @@ def g_episodic(tmp: Path, vault: Path) -> None:
                     "source": "startup"}), env={**episode_env(w, state, stub_cmd, marker), "EPISODIC_AUTOSUMMARY": "0"})
     expect("DRILL-STATE" in out and "\\u001b" not in out and chr(0x202E) not in out,
            "M7: SessionStart injects the file blocks without control or hidden characters", out[:200])
-    expect("სრული ტექსტი `" not in out, "control: a short brief goes whole, no block cut", out[-300:], kind="control")
+    expect("the full text is in `" not in out, "control: a short brief goes whole, no block cut", out[-300:], kind="control")
     # Claude Code keeps a hook text over ~10,000 characters in a file and shows the agent ~2,000 of it
     w = fresh(tmp, "episodic-long", vault)
     long = "".join(f"- გრძელი ხაზი {i}: " + "ძალიან ბევრი ქართული ტექსტი " * 7 + "\n" for i in range(40))
@@ -1519,10 +1525,10 @@ def g_episodic(tmp: Path, vault: Path) -> None:
     ctx = json.loads(out).get("hookSpecificOutput", {}).get("additionalContext", "") if out.strip().startswith("{") else ""
     expect(0 < len(ctx) <= 9_000, f"seeded: a brief of long blocks stays within its 9,000-character cap ({len(ctx):,})",
            ctx[-200:])
-    expect("ეს სესია:" in ctx and "3 compact ამ სესიაში" in ctx and ctx.find("ეს სესია:") < ctx.find("### ახლა"),
+    expect("this session:" in ctx and "3 compactions in this session" in ctx and ctx.find("this session:") < ctx.find("### Now"),
            "seeded: the session's facts and the ↻3 warning come first and whole", ctx[:300])
     expect(all(s in ctx for s in ("DRILL-STATE", "DRILL-PHASE", "DRILL-TODO"))
-           and all(f"სრული ტექსტი `{n}`-შია" in ctx for n in ("progress.md", "plan.md", "tasks/todo.md")),
+           and all(f"the full text is in `{n}`" in ctx for n in ("progress.md", "plan.md", "tasks/todo.md")),
            "seeded: each long block keeps its start and names the file that holds it whole", ctx[-300:])
     g_brief_caps(tmp, vault, state, stub_cmd, marker)
     # the facts are never cut, so none of them may grow without end: a project that never reconciles piles up sessions
@@ -1540,12 +1546,12 @@ def g_episodic(tmp: Path, vault: Path) -> None:
             {"session_id": f"9a1e0{n:03d}-0000-4000-8000-000000000086", "source": "startup"}),
             env={**episode_env(w, state, stub_cmd, marker), "EPISODIC_AUTOSUMMARY": "0"})
         ctx = json.loads(out).get("hookSpecificOutput", {}).get("additionalContext", "") if out.strip().startswith("{") else ""
-        line = next((ln for ln in ctx.splitlines() if "გადასამოწმებელი" in ln), "")
+        line = next((ln for ln in ctx.splitlines() if "sessions to reconcile" in ln), "")
         named = len(re.findall(r"EP-2026-01-01-[0-9a-f]{8}", line))
-        expect(named == min(n, 10) and (f"და კიდევ {n - 10}" in line) == (n > 10), f"the brief's facts: {label}",
+        expect(named == min(n, 10) and (f"and {n - 10} more" in line) == (n > 10), f"the brief's facts: {label}",
                f"{named} named; {line[:160]}", kind=kind)
         if title:
-            shown = next((ln for ln in ctx.splitlines() if "ბოლო დახურული სესია" in ln), "").partition(" — ")[2]
+            shown = next((ln for ln in ctx.splitlines() if "last closed session" in ln), "").partition(" — ")[2]
             expect(shown.startswith("r") and len(shown) <= 150,
                    f"seeded: the last closed session's {len(title) + 3}-character title → the brief keeps 150 of it",
                    f"{len(shown)} characters kept: {shown[:80]}")
@@ -1563,7 +1569,7 @@ def g_episodic(tmp: Path, vault: Path) -> None:
         rc, out, _ = py(".claude/hooks/episodic.py", "start", stdin=json.dumps(
             {"session_id": "9a1e0003-0000-4000-8000-000000000003", "source": "startup"}),
             env={**episode_env(w, state, stub_cmd, marker), "EPISODIC_AUTOSUMMARY": "0"})
-        m = re.search(r"ბოლო დახურული სესია: \[\[([^\]]+)\]\]", json.loads(out or "{}").get("hookSpecificOutput", {})
+        m = re.search(r"last closed session: \[\[([^\]]+)\]\]", json.loads(out or "{}").get("hookSpecificOutput", {})
                       .get("additionalContext", "") if out.strip().startswith("{") else "")
         return m.group(1) if m else "(none)"
     closed_ep("aaaa0000", "2026-01-01T12:00:00+04:00")
@@ -1749,7 +1755,7 @@ def g_brief_caps(tmp: Path, vault: Path, state: Path, stub_cmd: str, marker: Pat
                  f'session: {i:08x}-0000-4000-8000-000000000000\n'
                  'date: 2026-01-01\nstatus: closed\ncompacts: 0\nclosed_by: auto\nneeds_reconcile: true\n')
             + f"# EP-2026-01-01-{i:08x}\n\n## დახურვა — {ended} (reason: `other`)\n"
-            + ("- ძრავა: 🔧 ძრავა შეიცვალა — " + "ძრავის ხელსაწყო drill_case.py, " * 40 + "\n" if i == 29 else ""))
+            + ("- ძრავა: 🔧 engine changed — " + "engine tool drill_case.py, " * 40 + "\n" if i == 29 else ""))
     # and the longest backup line: more commits than its threshold beside the copy, both names at their cap
     limits = backup_limits()
     long_branch = "b" * (limits[1] + 20) if limits else ""
@@ -1758,17 +1764,17 @@ def g_brief_caps(tmp: Path, vault: Path, state: Path, stub_cmd: str, marker: Pat
     sid = "9a1e0170-0000-4000-8000-000000000170"
     write(state / f"compacts-{sid}", "12")
     ctx = brief(w, sid)
-    facts = ctx.partition("\n\n### ახლა — ")[0]
-    longest = limits is None or (f"💾 ბექაფი: {limits[0] + 1} commit" in facts
+    facts = ctx.partition("\n\n### Now — ")[0]
+    longest = limits is None or (f"💾 backup: {limits[0] + 1} commit" in facts
                                  and all(f"`{name[:limits[1] - 1]}…`" in facts for name in (long_branch,
                                                                                             "origin/" + long_branch)))
-    expect("12 compact ამ სესიაში" in facts and "და კიდევ 20" in facts and "ბოლო დახურული სესიის ბოლოს" in facts
-           and longest and "მოჭრილია" not in ctx and len(ctx) <= 8_800
+    expect("12 compactions in this session" in facts and "and 20 more" in facts and "at the end of the last closed session" in facts
+           and longest and "(cut —" not in ctx and len(ctx) <= 8_800
            and all(shown(ctx, n) == sized(t, caps[n]) for n, (_, t) in blocks.items()),
            "control: three blocks at their caps beside the longest facts — the backup line's longest among them "
            "— go whole, with 200 characters to spare for the catch-up fact this fixture does not start "
            "(ADR-0017)",
-           f"{len(ctx):,} characters, facts {len(facts):,}; cut: {'მოჭრილია' in ctx}; backup line: {longest}",
+           f"{len(ctx):,} characters, facts {len(facts):,}; cut: {'(cut —' in ctx}; backup line: {longest}",
            kind="control")
     for i, (name, (block, tag)) in enumerate(blocks.items()):
         w = fresh(tmp, f"episodic-cap-{block}", vault)
@@ -1776,8 +1782,8 @@ def g_brief_caps(tmp: Path, vault: Path, state: Path, stub_cmd: str, marker: Pat
         ctx = brief(w, f"9a1e0171-0000-4000-8000-00000000017{i}")
         part = shown(ctx, name)
         others = [n for n in blocks if n != name]
-        expect(part.startswith(tag) and len(part) <= caps[name] and f"სრული ტექსტი `{name}`-შია" in part
-               and all("მოჭრილია" not in shown(ctx, n) for n in others),
+        expect(part.startswith(tag) and len(part) <= caps[name] and f"the full text is in `{name}`" in part
+               and all("(cut —" not in shown(ctx, n) for n in others),
                f"seeded: {name}'s block 600 characters over its cap, the others short → it alone is cut, at its cap of "
                f"{caps[name]:,}, though the brief has room (ADR-0017)", f"{len(part):,} characters shown; {part[-120:]!r}")
 
@@ -1852,8 +1858,8 @@ def g_backup_line(tmp: Path, vault: Path) -> None:
     run(["git", "-C", str(bare), "fetch", "-q", str(r), "main:main"])
     rc, out, err = said(r)
     only_here = run(["git", "-C", str(r), "rev-list", "--count", "HEAD", "--not", "--remotes"])[1].strip()
-    expect(rc == 0 and out.startswith("💾 ბექაფი:") and f"{most + 1} commit მხოლოდ ამ კომპიუტერზეა" in out
-           and "`origin/main`" in out and "ბოლო fetch ან push — " in out and "ქსელით არ შემოწმებულა" in out
+    expect(rc == 0 and out.startswith("💾 backup:") and f"{most + 1} commit(s) exist only on this computer" in out
+           and "`origin/main`" in out and "last fetch or push — " in out and "not checked over the network" in out
            and tracking(r) == seen and (r / ".git/config").read_bytes() == config
            and not (r / ".git/FETCH_HEAD").exists(),
            f"seeded: {most + 1} commits the branch's copy does not hold → the line, its mark 💾, the count, the copy "
@@ -1863,10 +1869,10 @@ def g_backup_line(tmp: Path, vault: Path) -> None:
            f"{seen.split()} after {tracking(r).split()}")
     sid = "bac0e143-0000-4000-8000-000000000143"
     out = status(r, sid)
-    expect(f"backup: 💾 ბექაფი: {most + 1} commit" in out, "seeded: /session-close's facts (`episodic.py status`) carry "
+    expect(f"backup: 💾 backup: {most + 1} commit" in out, "seeded: /session-close's facts (`episodic.py status`) carry "
            "the backup line", out[-240:])
     ctx = start(r, sid)
-    expect(f"- 💾 ბექაფი: {most + 1} commit" in ctx and 'ატვირთვა — მხოლოდ მისი „კი"-თ' in ctx, "seeded: the session's "
+    expect(f"- 💾 backup: {most + 1} commit" in ctx and "pushing — only with their yes" in ctx, "seeded: the session's "
            "start brief carries it as a fact — tell the person in one sentence, upload only on their yes", ctx[:500])
     plain = fresh(tmp, "backup-no-git", vault)
     rc, out, err = said(plain)
@@ -1876,7 +1882,7 @@ def g_backup_line(tmp: Path, vault: Path) -> None:
     expect("backup: INCONCLUSIVE" in out, "seeded: git could not say what is uploaded → `status` says INCONCLUSIVE, "
            "never '-' (rules/23)", out[-240:])
     ctx = start(plain, sid)
-    expect("- 💾 ბექაფი: ვერ შემოწმდა" in ctx, "seeded: and the start brief says the backup could not be checked — no "
+    expect("- 💾 backup: could not be checked" in ctx, "seeded: and the start brief says the backup could not be checked — no "
            "silence that would read as 'all uploaded'", ctx[:500])
     git(r, "push", "-q", "origin", "main:other")  # by name: git's copy of `other` holds every commit of main
     rc, out, err = said(r)
@@ -1889,13 +1895,13 @@ def g_backup_line(tmp: Path, vault: Path) -> None:
     git(r, "checkout", "-q", "--no-track", "-b", feature)
     git(r, "commit", "-q", "--allow-empty", "-m", "a new branch's work")
     rc, out, err = said(r)
-    expect(rc == 0 and f"💾 ბექაფი: ბრანჩის `{feature[:name_chars - 1]}…` ატვირთული ასლი არ ჩანს — 1 commit მხოლოდ ამ "
-           "კომპიუტერზეა" in out and "ქსელით არ შემოწმებულა" in out, "seeded: a branch with no remote copy and one "
+    expect(rc == 0 and f"💾 backup: no pushed copy of branch `{feature[:name_chars - 1]}…` — 1 commit(s) exist only on this "
+           "computer" in out and "not checked over the network" in out, "seeded: a branch with no remote copy and one "
            "commit no remote holds → 'no uploaded copy is seen', not silence (rules/23); its long name cut at the cap",
            f"rc={rc} {(out + err)[-300:]}")
     git(r, "checkout", "-q", "--detach")
     rc, out, err = said(r)
-    expect(rc == 0 and "💾 ბექაფი: ამ commit-ის (detached HEAD) ატვირთული ასლი არ ჩანს — 1 commit" in out, "seeded: a "
+    expect(rc == 0 and "💾 backup: no pushed copy of this commit (detached HEAD) — 1 commit" in out, "seeded: a "
            "commit checked out with no branch (detached HEAD, as mid-rebase) → the line names the commit, not a branch",
            f"rc={rc} {(out + err)[-300:]}")
     git(r, "checkout", "-q", "--no-track", "-b", "work", "origin/other")
@@ -1920,8 +1926,8 @@ def g_backup_line(tmp: Path, vault: Path) -> None:
     git(e, "add", "-A")
     git(e, "commit", "-q", "-m", "the first save")
     rc, out, err = said(e)
-    expect(rc == 0 and "💾 ბექაფი: ბრანჩის `main` ატვირთული ასლი არ ჩანს" in out
-           and "დისტანციური ასლი (remote) არ აქვს" in out and "1 commit მხოლოდ ამ კომპიუტერზეა" in out,
+    expect(rc == 0 and "💾 backup: no pushed copy of branch `main`" in out
+           and "has no remote copy (remote)" in out and "1 commit(s) exist only on this computer" in out,
            "seeded: a project with no remote at all (as firstrun.py leaves a new one) → 'no uploaded copy is seen', "
            "with the reason", f"rc={rc} {(out + err)[-300:]}")
 
@@ -2218,30 +2224,30 @@ def g_episodic_intake(tmp: Path, vault: Path, stub_cmd: str, marker: Path) -> No
     expect("INTAKE-GOOD" in props and props.count("INTAKE-TWICE") == 1, "control: a new proposal with a real quote and an "
            "id that exists is added — once, even when the summary repeats it", props[-300:], kind="control")
     for text, label, shown in (
-            ("INTAKE-FAKE-QUOTE", "a quote the transcript does not hold", "არ დასტურდება: ციტატა ჩანაწერში"),
-            ("INTAKE-KNOWN", "the model's own `known`", "უკვე ცნობილი; შეადარა: P-001"),
-            ("INTAKE-GHOST-ID", "compared with an id no file has", "შედარებული id არ არსებობს: P-999"),
-            ("INTAKE-TEMP", "a `temporary` one", "INTAKE-TEMP — _დროებითი_"),
-            ("INTAKE-BARE", "a bare string, no quote (an older shape)", "INTAKE-BARE — _არ დასტურდება"),
-            ("INTAKE-SHORT-QUOTE", "a quote too short to prove anything", "INTAKE-SHORT-QUOTE — _არ დასტურდება"),
-            ("INTAKE-TWICE", "the summary's own repeat", "INTAKE-TWICE — _უკვე ცნობილი: ზუსტი დუბლიკატი")):
+            ("INTAKE-FAKE-QUOTE", "a quote the transcript does not hold", "not confirmed: the quote is not in the transcript"),
+            ("INTAKE-KNOWN", "the model's own `known`", "already known; compared: P-001"),
+            ("INTAKE-GHOST-ID", "compared with an id no file has", "a compared id does not exist: P-999"),
+            ("INTAKE-TEMP", "a `temporary` one", "INTAKE-TEMP — _temporary_"),
+            ("INTAKE-BARE", "a bare string, no quote (an older shape)", "INTAKE-BARE — _not confirmed"),
+            ("INTAKE-SHORT-QUOTE", "a quote too short to prove anything", "INTAKE-SHORT-QUOTE — _not confirmed"),
+            ("INTAKE-TWICE", "the summary's own repeat", "INTAKE-TWICE — _already known: exact duplicate")):
         expect(shown in ep and (text == "INTAKE-TWICE" or text not in props), f"seeded: {label} → not added to "
                "PROPOSALS.md, and the episode says why", f"in proposals: {text in props}; episode: {ep[-400:]!r}")
-    expect(props.count("existing idea") == 1 and "existing idea — _უკვე ცნობილი: ზუსტი დუბლიკატი" in ep,
+    expect(props.count("existing idea") == 1 and "existing idea — _already known: exact duplicate" in ep,
            "seeded: an exact repeat of a proposal the project has → turned down, visibly", ep[-300:])
-    for text, owner, label in (("INTAKE-OWNER-DECISION", "**მფლობელი**", "quote is the user's words"),
-                               ("INTAKE-PREFIXED-DECISION", "**მფლობელი**", "quote names its speaker ([user] …)"),
-                               ("INTAKE-REDACTED-DECISION", "**მფლობელი**", "quote holds a key the model read hidden"),
-                               ("INTAKE-AGENT-DECISION", "_აგენტის შეთავაზება", "quote is the assistant's"),
-                               ("INTAKE-SUMMARY-DECISION", "_აგენტის შეთავაზება",
+    for text, owner, label in (("INTAKE-OWNER-DECISION", "**owner**", "quote is the user's words"),
+                               ("INTAKE-PREFIXED-DECISION", "**owner**", "quote names its speaker ([user] …)"),
+                               ("INTAKE-REDACTED-DECISION", "**owner**", "quote holds a key the model read hidden"),
+                               ("INTAKE-AGENT-DECISION", "_the agent's suggestion", "quote is the assistant's"),
+                               ("INTAKE-SUMMARY-DECISION", "_the agent's suggestion",
                                 "quote is a compaction's summary (Claude Code's words, not the person's — review C1)"),
-                               ("INTAKE-SUMMARY-LABELLED-DECISION", "_აგენტის შეთავაზება",
+                               ("INTAKE-SUMMARY-LABELLED-DECISION", "_the agent's suggestion",
                                 "quote is a summary's words with their label ([summary] …)"),
-                               ("INTAKE-FAKE-DECISION", "_არ დასტურდება", "quote is nowhere"),
-                               ("INTAKE-SHORT-DECISION", "_არ დასტურდება", "quote is a single word")):
+                               ("INTAKE-FAKE-DECISION", "_not confirmed", "quote is nowhere"),
+                               ("INTAKE-SHORT-DECISION", "_not confirmed", "quote is a single word")):
         expect(f"{text} — {owner}" in ep, f"a decision whose {label} → {owner.strip('*_')}", ep[-400:],
                kind="control" if text == "INTAKE-OWNER-DECISION" else "seeded")
-    expect("INTAKE-LESSON-REAL\n" in ep and "გაკვეთილი — INTAKE-LESSON-FAKE — _არ დასტურდება" in ep,
+    expect("INTAKE-LESSON-REAL\n" in ep and "lesson — INTAKE-LESSON-FAKE — _not confirmed" in ep,
            "seeded: a lesson whose quote is nowhere is turned down; one with a real quote stays a candidate", ep[-300:])
     # /session-close closed the session; after it came a compaction's summary and prompts. The summary is no prompt, and
     # one prompt after the close is enough to be summarised — a task asked then reached no memory (review 2026-10-22 M2)
@@ -2272,7 +2278,7 @@ def g_episodic_intake(tmp: Path, vault: Path, stub_cmd: str, marker: Path) -> No
                             ensure_ascii=False) + "\n")
     before = calls()
     ep = summarize(sid, tp, keep=True)
-    expect(calls() == before and "არ დასჭირდა" not in ep, "control: only a short 'thanks' after /session-close → no "
+    expect(calls() == before and "no auto-summary needed" not in ep, "control: only a short 'thanks' after /session-close → no "
            "model call, and no note that the session was short", f"model called {calls() - before}×; {ep[-160:]!r}",
            kind="control")
     # /session-close wrote this session's entry in progress.md and the session went on; the summary of what came
@@ -2301,13 +2307,13 @@ def g_episodic_intake(tmp: Path, vault: Path, stub_cmd: str, marker: Path) -> No
     before = calls()
     summarize(sid, tp, keep=True)
     one = entry_of(prog.read_text(encoding="utf-8"), eid)
-    expect(calls() > before and "D123-CURATED-FACT" in one and one.count("- დახურვის შემდეგ") == 1
+    expect(calls() > before and "D123-CURATED-FACT" in one and one.count("- after the close") == 1
            and "DRILL-STUB-TITLE" in one, "seeded: /session-close's entry and a summary of a task asked after the "
            "close → the entry stays, the summary is one line under it", f"model called {calls() - before}×; {one!r}")
     ask_after_close(2)
     summarize(sid, tp, keep=True)
     two = entry_of(prog.read_text(encoding="utf-8"), eid)
-    expect("D123-CURATED-FACT" in two and two.count("- დახურვის შემდეგ") == 1, "seeded: a second summary after "
+    expect("D123-CURATED-FACT" in two and two.count("- after the close") == 1, "seeded: a second summary after "
            "the close replaces its own line, it does not pile up", repr(two))
     sid = "1a7a0124-0000-4000-8000-000000000124"
     eid = f"EP-{TODAY}-{sid[:8]}"
@@ -2359,11 +2365,11 @@ def g_episodic_intake(tmp: Path, vault: Path, stub_cmd: str, marker: Path) -> No
 
     before = calls()
     ep = summarize("1a7a0002-0000-4000-8000-000000000002", odd(tmp / "odd-big.jsonl", 12_000))
-    expect("ჩანაწერის ფორმატი ვერ ვიცანი" in ep and "needs_reconcile: true" in ep and calls() == before,
+    expect("unknown transcript format" in ep and "needs_reconcile: true" in ep and calls() == before,
            "seeded: a 12 KB transcript in which no line is understood → 'format not recognised', reconcile, no model call "
            "(it used to say 'the session was very short')", ep[-300:])
     ep = summarize("1a7a0003-0000-4000-8000-000000000003", odd(tmp / "odd-small.jsonl", 2_000))
-    expect("ძალიან მოკლე" in ep and "needs_reconcile: false" in ep, "control: a small transcript nobody could read is "
+    expect("very short" in ep and "needs_reconcile: false" in ep, "control: a small transcript nobody could read is "
            "still only 'very short'", ep[-300:], kind="control")
     for name, lines, want, label in (
             ("failed", hook_line("hook_success") + hook_line("hook_non_blocking_error"), True,
@@ -2377,14 +2383,14 @@ def g_episodic_intake(tmp: Path, vault: Path, stub_cmd: str, marker: Path) -> No
             fh.write(lines)
         sid = f"1a7a001{len(name)}-0000-4000-8000-000000000001"
         ep = summarize(sid, tp)
-        noted = "1-ჯერ ჩავარდა (L-020)" in ep and "PY-MISSING: drill" in ep and "needs_reconcile: true" in ep
+        noted = "failed 1 time(s) (L-020)" in ep and "PY-MISSING: drill" in ep and "needs_reconcile: true" in ep
         expect(noted == want and re.search(r'(?m)^claude_code: "?9\.9\.9-drill"?$', ep) is not None
                and "Claude Code 9.9.9-drill)" in ep, label + "; Claude Code's version is recorded (frontmatter and the "
                "summary's heading)", ep[-400:], kind="seeded" if want else "control")
         if want:
             ep = summarize(sid, tp, keep=True)
-            expect(ep.count("ჩავარდა (L-020)") == 1, "the same session summarised again carries the L-020 note once",
-                   f"{ep.count('ჩავარდა (L-020)')} notes")
+            expect(ep.count("time(s) (L-020)") == 1, "the same session summarised again carries the L-020 note once",
+                   f"{ep.count('time(s) (L-020)')} notes")
 
     # (a) L-020 after the fact: a session that ran without this engine's SessionStart gets an episode at the next start
     tdir = tmp / "transcripts-of-this-project"
@@ -2432,22 +2438,22 @@ def g_episodic_intake(tmp: Path, vault: Path, stub_cmd: str, marker: Path) -> No
 
     start()
     made = episode_of(gone)
-    ok = bool(made) and wait_for(lambda: "კვალი არ ჩანს" in made[0].read_text(encoding="utf-8"), 30)
+    ok = bool(made) and wait_for(lambda: "shows no trace" in made[0].read_text(encoding="utf-8"), 30)
     text = made[0].read_text(encoding="utf-8") if made else ""
     day = (datetime.now() - timedelta(hours=30)).date().isoformat()
-    expect(ok and "needs_reconcile: true" in text and "ეპიზოდის გარეშე" in text and made[0].name.startswith(f"EP-{day}-"),
+    expect(ok and "needs_reconcile: true" in text and "without an episode" in text and made[0].name.startswith(f"EP-{day}-"),
            "seeded: a transcript with no episode, idle 30 h → an episode dated by the session, closed, to reconcile, "
            "summarised; it says no trace of this engine's SessionStart was found (L-020)", f"{made} {text[-300:]!r}")
-    ok = wait_for(lambda: "1-ჯერ ჩავარდა" in eps[late].read_text(encoding="utf-8"), 30)
+    ok = wait_for(lambda: "failed 1 time(s)" in eps[late].read_text(encoding="utf-8"), 30)
     text = eps[late].read_text(encoding="utf-8")
-    expect(ok and "ეპიზოდის დახურვის შემდეგ" in text and "needs_reconcile: true" in text,
+    expect(ok and "after the episode was closed" in text and "needs_reconcile: true" in text,
            "seeded: a closed episode its transcript outlived, the hook failed on the resume (2026-10-16) → flagged",
            text[-300:])
     expect(eps[quiet].read_text(encoding="utf-8") == quiet_before, "a start takes at most two such sessions; the third "
            "waits for the next start")
     start({"DRILL_STUB_DELAY": str(MODEL_DELAY_S)})
     text = eps[quiet].read_text(encoding="utf-8")
-    expect("ეპიზოდის დახურვის შემდეგ" in text and "needs_reconcile: true" in text, "seeded: the catch-up marks it to "
+    expect("after the episode was closed" in text and "needs_reconcile: true" in text, "seeded: the catch-up marks it to "
            "reconcile at once — before the summarizer, which may never run", text[-300:])
     ok = wait_for(lambda: "DRILL-STUB-TITLE" in eps[quiet].read_text(encoding="utf-8"), 40)
     expect(ok and "კვალი არ ჩანს" not in eps[quiet].read_text(encoding="utf-8"), "control: a session that had an episode "
@@ -2498,19 +2504,19 @@ def g_episodic_intake(tmp: Path, vault: Path, stub_cmd: str, marker: Path) -> No
     long[20][1] = "DRILL-MIDDLE-MARKER " + long[20][1]
     r = read_as_model(long)
     expect("DRILL-HEAD-MARKER" in r["body"] and "DRILL-TAIL-MARKER" in r["body"] and "DRILL-MIDDLE-MARKER" not in r["body"]
-           and re.search(r"გამოტოვებულია \d+ შეტყობინება", r["body"]) and len(r["body"]) <= r["cap"] + 200,
+           and re.search(r"\d+ messages left out", r["body"]) and len(r["body"]) <= r["cap"] + 200,
            "seeded: a long session → its opening AND its end, whole messages, how many were left out said in place, "
            "within the cap (the end alone lost why the session began)", r["body"][:200])
     r = read_as_model([["user", "გაუშვი"], ["assistant", "აი კოდი:\n```python\nDRILL-CODE-LINE = 1\nb = 2\nc = 3\nd = 4\n"
                                                          "e = 5\n```\nდასრულდა."]])
-    expect("[კოდი: 5 ხაზი]" in r["body"] and "DRILL-CODE-LINE" not in r["body"] and "დასრულდა" in r["body"],
-           "seeded: an assistant's code block → `[კოდი: 5 ხაზი]`, its words kept", r["body"][-200:])
+    expect("[code: 5 lines]" in r["body"] and "DRILL-CODE-LINE" not in r["body"] and "დასრულდა" in r["body"],
+           "seeded: an assistant's code block → `[code: 5 lines]`, its words kept", r["body"][-200:])
     r = read_as_model([["user", "DRILL-BIG-START " + "დ" * 25_000 + " DRILL-BIG-MIDDLE " + "დ" * 25_000 + " DRILL-BIG-END"]])
     expect("DRILL-BIG-START" in r["body"] and "DRILL-BIG-END" in r["body"] and "DRILL-BIG-MIDDLE" not in r["body"]
-           and "სიმბოლო]" in r["body"] and len(r["body"]) < 9_000, "seeded: one huge message keeps its start and its end",
+           and "characters]" in r["body"] and len(r["body"]) < 9_000, "seeded: one huge message keeps its start and its end",
            f"{len(r['body'])} chars")
     r = read_as_model([["user", "მოკლე კითხვა\n```\nDRILL-USER-CODE\n```"], ["assistant", "მოკლე პასუხი"]])
-    expect("გამოტოვებულია" not in r["body"] and "DRILL-USER-CODE" in r["said"] and "მოკლე პასუხი" not in r["said"],
+    expect("left out" not in r["body"] and "DRILL-USER-CODE" in r["said"] and "მოკლე პასუხი" not in r["said"],
            "control: a short session is read whole, the user's own code is kept, and the user's part holds only the "
            "user's words", r["body"], kind="control")
 
@@ -2547,7 +2553,7 @@ def g_compactions(tmp: Path, state: Path, ep: Path, tp: Path, ep_cmd) -> None:
 
     expect(not counter.exists(), "control: no compaction counter before any compaction", kind="control")
     rc, out, _ = ep_cmd("start", {"session_id": SID, "source": "compact"})
-    expect("compact-ები: 1" in out and "compact ამ სესიაში" not in out,
+    expect("compactions: 1" in out and "compactions in this session" not in out,
            "SessionStart:compact runs before PostCompact, so it counts the compaction that triggered it", out[-200:])
     took, before = compaction("DRILL-SUMMARY-ONE " + "ქართული შეჯამება " * 6, lands_in=tp)
     ok = wait_for(lambda: count() == "1", 15)
@@ -2559,7 +2565,7 @@ def g_compactions(tmp: Path, state: Path, ep: Path, tp: Path, ep_cmd) -> None:
            f"control: the main session compacts — hook returns in {took:.1f}s, counted only after its summary reached "
            "the main transcript", f"before={before} now={count()}", kind="control")
     rc, out, _ = ep_cmd("start", {"session_id": SID, "source": "compact"})
-    expect("compact-ები: 2" in out, "SessionStart:compact re-injects with the count", out[-200:])
+    expect("compactions: 2" in out, "SessionStart:compact re-injects with the count", out[-200:])
     m4_key = "gh" + "p_" + "m4drill" + "abcdefghijklmnopqrstuvwxyz012"  # ghp_ + 36: a token shape the redactor knows
     compaction("DRILL-SUMMARY-TWO " + "მეორე შეჯამება " * 6 + f"key {m4_key} " + chr(0x202E) + "x", lands_in=tp,
                trigger="manual")
@@ -2567,7 +2573,7 @@ def g_compactions(tmp: Path, state: Path, ep: Path, tp: Path, ep_cmd) -> None:
     text = ep.read_text(encoding="utf-8")
     expect(ok and "## compact #2 (manual)" in text and "compacts: 2" in text,
            "second compaction: numbered, trigger kept, frontmatter compacts: 2", count())
-    expect(m4_key not in text and "REDACTED:github-token]" in text and "compact-ის შეჯამებიდან ამოიშალა" in text
+    expect(m4_key not in text and "REDACTED:github-token]" in text and "removed from the compact summary" in text
            and chr(0x202E) not in text, "seeded: a key and a hidden character in a compaction's summary → hidden in the "
            "episode, with a warning (review 2026-10-22 M4)", f"key in episode: {m4_key in text}")
     compaction("DRILL-SUBAGENT-ONE " + "subagent-ის შეჯამება " * 6, lands_in=sub)
@@ -2582,7 +2588,7 @@ def g_compactions(tmp: Path, state: Path, ep: Path, tp: Path, ep_cmd) -> None:
     compaction("DRILL-NOWHERE " + "არსად " * 6, lands_in=None, extra={"EPISODIC_COMPACT_WAIT_S": "2"})
     ok = wait_for(lambda: logged("UNATTRIBUTED: the summary reached no transcript in 2s"), 15)
     text = ep.read_text(encoding="utf-8")
-    expect(ok and count() == "4" and "DRILL-NOWHERE" in text and "ვერ დადგინდა" in text,
+    expect(ok and count() == "4" and "DRILL-NOWHERE" in text and "could not tell" in text,
            "seeded: the summary reaches no transcript → counted anyway and flagged in the episode and the log, "
            "never silently dropped", f"count={count()}")
     base = {"session_id": SID, "trigger": "auto", "transcript_path": str(tp)}
@@ -2623,7 +2629,7 @@ def g_reconciled_resume(tmp: Path, v: Path, state: Path, marker: Path, ep_cmd) -
     calls_after = marker.read_text().count("called") if marker.exists() else 0
     text = read_settled(quiet)
     flag = re.search(r"(?m)^needs_reconcile: .*$", text)
-    expect("გაგრძელება" in text and "status: closed" in text,
+    expect("## Continued" in text and "status: closed" in text,
            "control: the reopening and the close of a reconciled session are still recorded in its episode", text[-200:],
            kind="control")
     expect(calls_after == calls_before and flag is not None and flag.group(0) == "needs_reconcile: false",
@@ -2745,12 +2751,12 @@ def g_catchup_refused(tmp: Path, v: Path, env: dict) -> None:
         elsewhere_cases(1, "episodic: an idle empty stub held open by another process (Windows only)")
     for i, (label, attempt) in enumerate(cases, 1):
         rc, brief, err = attempt()
-        expect(rc == 0 and "### სესიის ფაქტები" in brief and stub.exists()
+        expect(rc == 0 and "### Session facts" in brief and stub.exists()
                and logged(f"catch-up {stub.name} skipped: PermissionError") == i,
                f"seeded: an idle empty stub {label} → SessionStart still brings the working memory, the stub stays and "
                "the log says why", f"rc={rc}, brief {len(brief)} characters, stub kept: {stub.exists()}; {err[-160:]}")
     rc, brief, _ = start(3, [PY, str(hook), "start"])
-    expect(not stub.exists() and "### სესიის ფაქტები" in brief,
+    expect(not stub.exists() and "### Session facts" in brief,
            "control: with nothing in the way, the next start removes the stub", f"stub kept: {stub.exists()}",
            kind="control")
     # the second loop: a session that ran without this engine's hooks, whose new episode cannot be written
@@ -2761,7 +2767,7 @@ def g_catchup_refused(tmp: Path, v: Path, env: dict) -> None:
     old = time.time() - 6.5 * 3600
     os.utime(hookless, (old, old))
     rc, brief, err = start(4, refusing, refuse="-b0810000.md", tp=str(tdir / "fe550084-this-session.jsonl"))
-    expect(rc == 0 and "### სესიის ფაქტები" in brief and logged(f"catch-up {hookless.name} skipped: PermissionError") == 1
+    expect(rc == 0 and "### Session facts" in brief and logged(f"catch-up {hookless.name} skipped: PermissionError") == 1
            and not list((v / "memory/episodes").glob("EP-*-b0810000.md")),
            "seeded: a session that ran without this engine's hooks, whose episode cannot be written → SessionStart still "
            "brings the working memory and the log says why", f"rc={rc}, brief {len(brief)} characters; {err[-160:]}")
@@ -2778,9 +2784,9 @@ def g_catchup_refused(tmp: Path, v: Path, env: dict) -> None:
     os.utime(idle, (old, old))
     rc, brief, err = start(5, refusing, refuse=idle.name, nth=2)
     text = read_settled(idle)
-    expect(rc == 0 and "### სესიის ფაქტები" in brief and "status: closed" in text and "## დახურვა" in text,
+    expect(rc == 0 and "### Session facts" in brief and "status: closed" in text and "## Closed" in text,
            "seeded: a write refused after the catch-up's first one to an idle episode → the episode is closed with its "
-           "close, never without it", f"closed: {'status: closed' in text}, close heading: {'## დახურვა' in text}; "
+           "close, never without it", f"closed: {'status: closed' in text}, close heading: {'## Closed' in text}; "
            f"{err[-160:]}")
 
 
@@ -4278,12 +4284,12 @@ def g_engine_line(tmp: Path) -> None:
     expect(rc == 0 and out == "", "control: only a note changed, no engine file → no line", out[-200:], kind="control")
     write(r / ".claude/hooks/guard.py", "# guard, weakened\n")
     rc, out = said()
-    expect(rc == 0 and out.startswith("🔧") and "ჯერ commit-ში არ არის (დრილი commit-ზე შეამოწმებს): ⚠ guard" in out,
+    expect(rc == 0 and out.startswith("🔧") and "not committed yet (the drill checks it at commit): ⚠ guard" in out,
            "seeded: the guard changed, not committed → the line, ⚠ guard, 'not in a commit yet'", out[-240:])
     git(r, "add", "-A")
     git(r, "commit", "-q", "-m", "the guard, past the commit check")  # the drill's git runs no hook: no receipt
     rc, out = said()
-    expect("⚠ commit-შია, მაგრამ დრილს არ შეუმოწმებია: ⚠ guard" in out, "seeded: the guard committed with no drill run "
+    expect("⚠ committed, but the drill has not checked it: ⚠ guard" in out, "seeded: the guard committed with no drill run "
            "(no receipt: `--no-verify`, or a commit check that no longer runs it) → '⚠ in a commit, not checked by the "
            "drill'", out[-240:])
     stand_in, ran = write(tmp / "engine-line-drill.py", FLOOR_STAND_IN), tmp / "engine-line-drill-ran"
@@ -4307,7 +4313,7 @@ def g_engine_line(tmp: Path) -> None:
            "for the tree the commit records", f"rc={rc} {out[-160:]} {held}", kind="control")
     git(r, "commit", "-q", "-m", "the guard put back, drilled")
     rc, out = said()
-    expect("commit-შია და დრილმა შეამოწმა ✓: ⚠ guard" in out and "არ შეუმოწმებია" not in out, "control: the guard's "
+    expect("committed and checked by the drill ✓: ⚠ guard" in out and "has not checked" not in out, "control: the guard's "
            "newest commit passed the drill → 'in a commit, checked by the drill ✓', and still ⚠", out[-240:], kind="control")
     write(r / ".claude/agents/checker.md", "# checker\n")
     git(r, "add", "-A")
@@ -4317,21 +4323,21 @@ def g_engine_line(tmp: Path) -> None:
     crc, cout = commit_check("ARMED=1  ELSEWHERE=0  DEAD/DEFECT=0  INCONCLUSIVE=0  (0s)")
     git(r, "commit", "-q", "-m", "a rule, drilled")
     rc, out = said()
-    expect(crc == 0 and "subagent checker" in out and "არ შეუმოწმებია" not in out, "control: a file committed with no "
+    expect(crc == 0 and "subagent checker" in out and "has not checked" not in out, "control: a file committed with no "
            "drill run, then a newer commit the drill passed (the drill runs over the whole tree, so that tree holds the "
            "file as it is now) → 'checked ✓', no false alarm", f"rc={crc} {cout[-120:]} | {out[-240:]}", kind="control")
     write(r / ".claude/agents/checker.md", "# checker, changed again\n")
     git(r, "add", "-A")
     git(r, "commit", "-q", "-m", "the subagent again, past the commit check")  # no receipt
     rc, out = said()
-    expect("⚠ commit-შია, მაგრამ დრილს არ შეუმოწმებია: subagent checker" in out, "seeded: the file changed again after the "
+    expect("⚠ committed, but the drill has not checked it: subagent checker" in out, "seeded: the file changed again after the "
            "newest receipt, committed with no drill run → '⚠ not checked' — an older receipt does not cover a newer "
            "change", out[-300:])
     write(r / ".githooks/pre-commit", "#!/bin/sh\n# the drill is not run any more\nexit 0\n")
     write(r / ".claude/skills/helper/SKILL.md", "---\nname: helper\n---\n")
     write(r / "tools/new_tool.py", "print(1)\n")
     rc, out = said()
-    expect("⚠ commit-ის შემოწმება" in out and "skill /helper" in out and "ძრავის ხელსაწყო new_tool.py" in out,
+    expect("⚠ the commit check" in out and "skill /helper" in out and "engine tool new_tool.py" in out,
            "seeded: the commit check (.githooks/), a new skill and a new engine tool → named in plain words, ⚠ on the "
            "commit check (a change the drill itself cannot see)", out[-300:])
     plain = tmp / "engine-line-no-git"
@@ -4378,16 +4384,16 @@ def g_engine_line(tmp: Path) -> None:
     expect("engine: 🔧" in out and "⚠ guard" in out, "seeded: the guard changed → /session-close's facts (`status`) "
            "carry the engine line", out[-240:])
     hook("end", one)
-    expect("- ძრავა: 🔧" in episode(one) and "⚠ guard" in episode(one), "seeded: the session ends (SessionEnd) → its "
+    expect("- engine: 🔧" in episode(one) and "⚠ guard" in episode(one), "seeded: the session ends (SessionEnd) → its "
            "episode keeps the engine line, ⚠ guard", episode(one)[-300:])
     out = hook("start", two)
-    expect("⚠ guard" in shown(out) and "ბოლო დახურული სესიის ბოლოს" in out, "seeded: the next session starts → the "
+    expect("⚠ guard" in shown(out) and "at the end of the last closed session" in out, "seeded: the next session starts → the "
            "person sees that line (systemMessage, no model in between) and the agent gets it as a fact", out[-300:])
     run(["git", "-C", str(e), "checkout", "-q", "--", ".claude/hooks/guard.py"])
     rc, out, _ = py(".claude/hooks/episodic.py", "status", two, env=env)
     expect("engine: -" in out, "control: no engine file changed → `status` says engine: -", out[-200:], kind="control")
     hook("end", two)
-    expect("## დახურვა" in episode(two) and "- ძრავა:" not in episode(two), "control: a session that changed no engine "
+    expect("## Closed" in episode(two) and "- engine:" not in episode(two), "control: a session that changed no engine "
            "file ends with no engine line", episode(two)[-300:], kind="control")
     out = hook("start", three)
     expect('"additionalContext"' in out and not shown(out), "control: the start after it shows no engine line", out[-200:],
@@ -4399,7 +4405,7 @@ def g_engine_line(tmp: Path) -> None:
     expect("engine: INCONCLUSIVE" in out, "seeded: the session's start commit is gone → `status` says INCONCLUSIVE, never "
            "'-'", out[-200:])
     hook("end", three)
-    expect("- ძრავა: ვერ შემოწმდა" in episode(three), "seeded: and its episode says the line could not be checked — no "
+    expect("- engine: could not be checked" in episode(three), "seeded: and its episode says the line could not be checked — no "
            "silence that would read as 'nothing changed'", episode(three)[-300:])
 
 
@@ -5083,8 +5089,8 @@ def g_sentinel(tmp: Path, vault: Path) -> None:
     rc, out, _ = sentinel(v, "prompt", {"prompt": "აი გასაღები: " + samples["anthropic-key"] + " — ჩასვი კონფიგში"})
     data = hook_out(out)
     expect(data.get("decision") == "block" and "SENTINEL[P1]" in data.get("reason", "") and ".env" in data.get("reason", "")
-           and "შეტყობინება" in data.get("reason", "") and samples["anthropic-key"] not in out,
-           "seeded: a key pasted into the owner's message → prompt blocked, Georgian advice (SENTINEL[P1])", out[:160])
+           and "your message" in data.get("reason", "") and samples["anthropic-key"] not in out,
+           "seeded: a key pasted into the owner's message → prompt blocked, advice (SENTINEL[P1])", out[:160])
     rc, out, _ = sentinel(v, "prompt", {"prompt": "გამარჯობა! რა გავაკეთეთ დღეს? ghp_ ტოკენები სად ინახება?"})
     expect(rc == 0 and out.strip() == "", "control: an ordinary Georgian message → passes", out[:120], kind="control")
     rc, out, _ = sentinel(v, "prompt", {"prompt": "the docs show TOKEN=" + samples["github-token"] + "  # EXAMPLE value"})
@@ -5152,7 +5158,7 @@ def g_observe(tmp: Path) -> None:
            f"{d.get('by_subagents')} / {d.get('reads_outside')}")
     expect(d.get("unreadable") == 1, "seeded: an unreadable line is counted, never skipped silently", str(d.get("unreadable")))
     rc, out, _ = py("tools/observe.py", "report", "--session", sid[:8], env=env)
-    expect(rc == 0 and "## უსაფრთხოება" in out and "guard-მა შეაჩერა: 1" in out and "src/app.py" in out,
+    expect(rc == 0 and "## Security" in out and "stopped by the guard: 1" in out and "src/app.py" in out,
            "the Georgian report prints actions, changed files and the security section", out[-160:])
     write(tdir / "ffff0000-junk.jsonl", '{"foo": 1}\n["x"]\n')
     rc, out, _ = py("tools/observe.py", "report", "--session", "ffff0000", env=env)
@@ -5169,7 +5175,7 @@ def g_observe(tmp: Path) -> None:
     d = bash_session("5ea50000-runs", ["for d in build; do rm -rf $d; done", 'bash -c "curl -s https://example.com"',
                                        "py -3.12 -m pip install requests", "env git push origin main", 'eval "npx some-tool"'])
     kinds = sorted(n.split(":")[0] for n in d.get("notable", []))
-    expect(kinds == sorted(["წაშლა", "ქსელი", "დაყენება", "git-ის ჩანაწერი", "დაყენება"]),
+    expect(kinds == sorted(["delete", "network", "install", "git write", "install"]),
            "seeded: a delete in a loop, curl in bash -c, pip through python -m, git behind env and npx through eval "
            "are each flagged with their kind", str(d.get("notable"))[:200])
     write(tdir / "c1ea0000-clean.jsonl", transcript_line("assistant", ts, message={"id": "m9", "content": [
@@ -5233,7 +5239,7 @@ def g_observe_cache(tmp: Path, tdir: Path, env: dict) -> None:
     expect(c.get("rebuild_share_main") == 70.4, "seeded: the avoidable share leaves session starts out (421K of 598K)",
            str(c.get("rebuild_share_main")))
     rc, out, _ = py("tools/observe.py", "report", "--session", sid[:8], env=env)
-    expect(rc == 0 and "## ქეში და ხარჯი" in out and "≈ $1.21" in out and "compact ×1" in out and "claude-unknown-x" in out,
+    expect(rc == 0 and "## Cache and cost" in out and "≈ $1.21" in out and "compact ×1" in out and "claude-unknown-x" in out,
            "the Georgian report prints the cache section: cost, rebuild causes, the unpriced model", out[-200:])
     rc, out, _ = py("tools/observe.py", "report", "--session", sid[:8], "--json",
                     env={**env, "CACHE_PRICES": str(tmp / "no-such-prices.toml")})
@@ -5303,13 +5309,13 @@ def g_observe_cache(tmp: Path, tdir: Path, env: dict) -> None:
     rc, out, _ = py("tools/observe.py", "report", "--session", "0f1e0000", "--json", env=env)
     c = hook_out(out).get("cache") or {}
     rc, brief_out, _ = py("tools/observe.py", "report", "--session", "0f1e0000", "--brief", env=env)
-    expect(c.get("usd") is None and "ფასი უცნობია" in brief_out and "$" not in brief_out,
+    expect(c.get("usd") is None and "price unknown" in brief_out and "$" not in brief_out,
            "seeded: every model unpriced → the cost is unknown in the report and the brief line, never $0.00",
            f"{c.get('usd')} / {brief_out[-120:]}")
     write(tdir / "c0de0000-grow.jsonl", model_call("g1", "2026-10-06T10:00:00Z", cw=10_000) + "\n"
           + model_call("g2", "2026-10-06T10:00:30Z", cr=10_000, cw=70_000) + "\n")
     rc, out, _ = py("tools/observe.py", "report", "--session", "c0de0000", env=env)
-    expect(rc == 0 and "„თავიდან აწყობა\" არ ყოფილა" in out, "control: a context that only grows with new content → no rebuild",
+    expect(rc == 0 and "no \"rebuilds\"" in out, "control: a context that only grows with new content → no rebuild",
            out[-160:], kind="control")
 
 
@@ -5520,7 +5526,7 @@ def g_wiring(tmp: Path, vault: Path) -> None:
     sl_env = {"ENGINE_STATUSLINE_BASE": "", "CLAUDE_STATUSLINE_STATE_DIR": str(state)}
     rc, out, err = check([bash, "-c", cmd], stdin=payload, env={**sl_env, "CLAUDE_PROJECT_DIR": str(CODE)}, cwd=CODE,
                          timeout=60)
-    expect(rc == 0 and "ქეში: უცნობია" in out, "the wired status line command runs (CLAUDE_PROJECT_DIR set, as Claude "
+    expect(rc == 0 and "cache: unknown" in out, "the wired status line command runs (CLAUDE_PROJECT_DIR set, as Claude "
            "Code sets it)", (out + err)[-160:])
     decoy = tmp / "decoy"
     write(decoy / ".claude/hooks/py.sh", 'echo DECOY-RAN > "$(dirname "$0")/decoy-ran.txt"\necho DECOY-RAN\n')
@@ -5735,7 +5741,7 @@ def g_firstrun(tmp: Path) -> None:
            "seeded: gitleaks missing → the agent is told, with the install command for the person's yes", out[-200:])
     expect("user.email" in out and "git config --local user.email" in out,
            "seeded: git knows no e-mail → the agent is told to ask the person and set it in this repository only", out[-200:])
-    expect("sandbox" in out and "sandbox და WSL2" in out,
+    expect("sandbox" in out and "sandbox and WSL2" in out,
            "seeded: where Claude Code's sandbox stands is told at the first run, with the README part that explains it "
            "(ADR-0014)", out[-240:])
     rc, out = first(p)
@@ -5743,11 +5749,11 @@ def g_firstrun(tmp: Path) -> None:
            "was already reported once)", out[-200:], kind="control")
     sb_none = project("fr-sandbox-none")
     rc, out = first(sb_none, ENGINE_SANDBOX_STATE="none")
-    expect(rc == 0 and "Windows-ზე არ არსებობს" in out and "WSL2" in out,
+    expect(rc == 0 and "does not exist on native Windows" in out and "WSL2" in out,
            "seeded: no sandbox on this system (native Windows) → said once, with WSL2 as the way to have one", out[-240:])
     sb_off = project("fr-sandbox-off")
     rc, out = first(sb_off, ENGINE_SANDBOX_STATE="off")
-    expect(rc == 0 and "გამორთულია" in out and "sandbox.enabled" in out,
+    expect(rc == 0 and "but is off" in out and "sandbox.enabled" in out,
            "seeded: a system that has the sandbox, nothing switches it on → said once, with the setting for the "
            "person's yes", out[-240:])
     sb_on = project("fr-sandbox-on")
@@ -5780,14 +5786,14 @@ def g_firstrun(tmp: Path) -> None:
     run(["git", "-C", str(m), "init", "-q"])
     run(["git", "-C", str(m), "config", "--local", "core.hooksPath", ".githooks"])
     out = first(m)[1] + "\n" + first(m)[1]
-    expect(out.count(".githooks/pre-commit` არ არის") == 2, "seeded: core.hooksPath is .githooks but the hook file is "
+    expect(out.count(".githooks/pre-commit` is missing") == 2, "seeded: core.hooksPath is .githooks but the hook file is "
            "missing (git skips it without a word) → the agent is told at every session start", out[-240:])
     outer = tmp / "fr-outer"
     outer.mkdir()
     run(["git", "-C", str(outer), "init", "-q"])
     inner = project("fr-outer/inner")
     rc, out = first(inner)
-    expect(not (inner / ".git").exists() and hooks_path(outer) == "" and "სხვა git-რეპოს" in out,
+    expect(not (inner / ".git").exists() and hooks_path(outer) == "" and "inside another git repository" in out,
            "seeded: a project inside another repository → that repository is left alone and the agent told", out[-200:])
     n = project("fr-nested")
     rc, out = first(n, EPISODIC_NESTED="1")
@@ -5928,23 +5934,23 @@ def g_engine_statusline(tmp: Path) -> None:
 
     t = tmp / "sl"
     rc, out = show(sl_transcript(t / "warm.jsonl", 5, 4, 400_000))
-    expect(rc == 0 and "ქეში თბილია" in out and "❄" not in out, "control: asked 5 minutes ago on a 1-hour cache → warm",
+    expect(rc == 0 and "cache warm" in out and "❄" not in out, "control: asked 5 minutes ago on a 1-hour cache → warm",
            out[-160:], kind="control")
     lines = out.split("\n")
-    expect(rc == 0 and len(lines) >= 3 and "ეტაპი 2/6" in lines[1] and "/approve spec 0001" in lines[1] and "ქეში" in lines[2],
+    expect(rc == 0 and len(lines) >= 3 and "Stage 2/6" in lines[1] and "/approve spec 0001" in lines[1] and "cache" in lines[2],
            "seeded: the line under the owner's names the project's stage and the next command (2/6 → /approve spec 0001), "
            "the cache line follows", out[-240:])
-    expect(rc == 0 and any("ქეში" in ln and "🛡 sandbox" in ln for ln in lines),
+    expect(rc == 0 and any("cache" in ln and "🛡 sandbox" in ln for ln in lines),
            "seeded: the cache line ends with where the sandbox stands (🛡), read from the system and the settings "
            "(ADR-0014)", out[-240:])
     rc, out = show(sl_transcript(t / "sb-none.jsonl", 5, 4, 100_000), ENGINE_SANDBOX_STATE="none")
-    expect("🛡 sandbox არ არის — Windows" in out and "WSL2" in out,
-           "seeded: no sandbox on this system → '🛡 sandbox არ არის — Windows (WSL2-ში მუშაობს)'", out[-200:])
+    expect("🛡 sandbox unavailable — Windows" in out and "WSL2" in out,
+           "seeded: no sandbox on this system → '🛡 sandbox unavailable — Windows (works in WSL2)'", out[-200:])
     rc, out = show(sl_transcript(t / "sb-on.jsonl", 5, 4, 100_000), ENGINE_SANDBOX_STATE="on")
-    expect("🛡 sandbox ჩართულია" in out, "seeded: the settings switch the sandbox on → '🛡 sandbox ჩართულია'", out[-200:])
+    expect("🛡 sandbox on" in out, "seeded: the settings switch the sandbox on → '🛡 sandbox on'", out[-200:])
     rc, out = show(sl_transcript(t / "sb-off.jsonl", 5, 4, 100_000), ENGINE_SANDBOX_STATE="off")
-    expect("🛡 sandbox გამორთულია" in out,
-           "seeded: a system that has the sandbox, nothing switches it on → '🛡 sandbox გამორთულია'", out[-200:])
+    expect("🛡 sandbox off" in out,
+           "seeded: a system that has the sandbox, nothing switches it on → '🛡 sandbox off'", out[-200:])
     # tools/sandbox_state.py reads the settings itself; --system makes the reading the same on every machine, and an
     # empty home keeps the person's own settings out of it.
     sb_home = tmp / "sb-home"
@@ -5968,7 +5974,7 @@ def g_engine_statusline(tmp: Path) -> None:
     expect(got.startswith("off Linux"), "control: a system that has the sandbox, no settings anywhere → off", got[:80],
            kind="control")
     got = sandbox(sb_on_root, "Linux")
-    expect(got.startswith("on Linux") and "ჩართულია" in got, "seeded: sandbox.enabled true in the project's settings → on",
+    expect(got.startswith("on Linux") and "sandbox on" in got, "seeded: sandbox.enabled true in the project's settings → on",
            got[:80])
     got = sandbox(sb_local_root, "macOS")
     expect(got.startswith("off macOS"), "seeded: settings.local.json says off while settings.json says on → the local file "
@@ -5986,25 +5992,25 @@ def g_engine_statusline(tmp: Path) -> None:
     hidden = ("\x1b[2K", chr(0x85), chr(0x202E), chr(0xE0041))  # the line's own colours are ESC sequences too
     edit(odd_vault / "docs/specs/SPEC-0001-demo.md", "id: SPEC-0001\n", "id: SPEC-0001" + "".join(hidden) + "X\n")
     rc, out = show(sl_transcript(t / "odd-id.jsonl", 5, 4, 100_000), CONTEXT_ROOT=str(odd_vault))
-    expect(rc == 0 and "ეტაპი 2/6" in out and "SPEC-0001[2KX" in out and not any(c in out for c in hidden),
+    expect(rc == 0 and "Stage 2/6" in out and "SPEC-0001[2KX" in out and not any(c in out for c in hidden),
            "seeded: a spec id carrying an ANSI escape, a C1 control, a bidi override and a tag character → the stage "
            "line prints none of them (review S5)", repr(out[-200:]))
     rc, out = show(sl_transcript(t / "no-project.jsonl", 5, 4, 100_000), CONTEXT_ROOT=str(tmp / "sl-no-project"))
-    expect(rc == 0 and "ეტაპი" not in out and "ქეში თბილია" in out,
+    expect(rc == 0 and "🧭" not in out and "cache warm" in out,
            "control: a folder without intent.md → no stage line, the rest unchanged", out[-160:], kind="control")
     rc, out = show(sl_transcript(t / "soon.jsonl", 55, 54, 400_000))
-    expect("ქეში იწურება" in out, "seeded: asked 55 minutes ago → the cache expires within 10 minutes", out[-160:])
+    expect("cache expires" in out, "seeded: asked 55 minutes ago → the cache expires within 10 minutes", out[-160:])
     rc, out = show(sl_transcript(t / "long-answer.jsonl", 58, 2, 400_000, first_min=45))
-    expect("ქეში იწურება" in out, "seeded: asked 58 minutes ago, the answer began 45 and ended 2 minutes ago — the life "
+    expect("cache expires" in out, "seeded: asked 58 minutes ago, the answer began 45 and ended 2 minutes ago — the life "
            "counts from the request, not from any line of the answer", out[-160:])
     rc, out = show(sl_transcript(t / "big-before.jsonl", 58, 2, 400_000, first_min=45, big_before=True))
-    expect("ქეში იწურება" in out, "seeded: a 300 KB record right before the answer — the request's start is looked "
+    expect("cache expires" in out, "seeded: a 300 KB record right before the answer — the request's start is looked "
            "for further back, not guessed from the answer", out[-160:])
     rc, out = show(sl_transcript(t / "cold-big.jsonl", 120, 119, 400_000))
-    expect("❄" in out and "400K" in out and "≈$0.80" in out and "ახალი სესია" in out,
+    expect("❄" in out and "400K" in out and "≈$0.80" in out and "new session" in out,
            "seeded: cold with a 400K context → the rewrite in tokens and dollars, and 'a new session is cheaper'", out[-200:])
     rc, out = show(sl_transcript(t / "cold-small.jsonl", 120, 119, 40_000))
-    expect("❄" in out and "პატარაა" in out and "ახალი სესია" not in out,
+    expect("❄" in out and "small context" in out and "new session" not in out,
            "seeded: cold with a 40K context → cold, but no new-session advice", out[-160:])
     rc, out = show(sl_transcript(t / "five-min.jsonl", 8, 7, 400_000, ttl="5m"))
     expect("❄" in out, "seeded: 5-minute cache entries, asked 8 minutes ago → cold (the life is read from the writes)",
@@ -6014,26 +6020,26 @@ def g_engine_statusline(tmp: Path) -> None:
            out[-160:])
     (state / "compacts-sl-three").write_text("3", encoding="utf-8")
     rc, out = show(sl_transcript(t / "badge.jsonl", 5, 4, 100_000), sid="sl-three")
-    expect("↻3" in out and "ახალი სესია" in out and "Drill" in out,
-           "seeded: no owner's line and 3 compactions → own line with the red ↻3 'ახალი სესია' badge", out[-200:])
+    expect("↻3" in out and "new session" in out and "Drill" in out,
+           "seeded: no owner's line and 3 compactions → own line with the red ↻3 'new session' badge", out[-200:])
     (state / "compacts-x").mkdir()
     write(tmp / "outside-count", "3")
     rc, out = show(sl_transcript(t / "sid.jsonl", 5, 4, 100_000), sid="x/../../outside-count")
     expect(rc == 0 and "↻" not in out and "Drill" in out,
            "seeded: a session id with path characters → no file outside the state folder is read", out[-160:])
     rc, out = show(sl_transcript(t / "base.jsonl", 5, 4, 100_000), ENGINE_STATUSLINE_BASE="echo BASE-LINE-7")
-    expect(out.startswith("BASE-LINE-7") and "Drill" not in out and "ქეში თბილია" in out,
+    expect(out.startswith("BASE-LINE-7") and "Drill" not in out and "cache warm" in out,
            "seeded: the owner's own status line is printed first and unchanged, the cache line after it", out[-160:])
     rc, out = show(sl_transcript(t / "stdin.jsonl", 5, 4, 100_000), ENGINE_STATUSLINE_BASE="cat")
     expect(out.startswith("{") and '"sl-drill"' in out.split("\n")[0],
            "seeded: the owner's line receives the same payload on its stdin", out[:160])
     rc, out = show(sl_transcript(t / "base-fails.jsonl", 5, 4, 100_000), ENGINE_STATUSLINE_BASE="echo HALF-LINE; exit 3")
-    expect(rc == 0 and "HALF-LINE" not in out and "Drill" in out and "ქეში თბილია" in out,
+    expect(rc == 0 and "HALF-LINE" not in out and "Drill" in out and "cache warm" in out,
            "seeded: the owner's line fails half-way → its output is dropped, own short line instead", out[-160:])
     started = time.time()
     rc, out = show(sl_transcript(t / "hang.jsonl", 5, 4, 100_000), ENGINE_STATUSLINE_BASE="sleep 20")
     took = time.time() - started
-    expect(rc == 0 and took < 12 and "Drill" in out and "ქეში თბილია" in out,
+    expect(rc == 0 and took < 12 and "Drill" in out and "cache warm" in out,
            f"seeded: the owner's line hangs → it and its child are stopped after 4 s; the status line came back in "
            f"{took:.0f} s with its own line", out[-160:])
     late = tmp / "late-marker.txt"
@@ -6047,7 +6053,7 @@ def g_engine_statusline(tmp: Path) -> None:
     me = f'"{Path(PY).as_posix()}" "{(CODE / ".claude/hooks/statusline.py").as_posix()}"'
     started = time.time()
     rc, out = show(sl_transcript(t / "self.jsonl", 5, 4, 100_000), ENGINE_STATUSLINE_BASE=me)
-    expect(rc == 0 and out.count("ქეში") == 1 and "Drill" in out and time.time() - started < 3,
+    expect(rc == 0 and out.count("cache") == 1 and "Drill" in out and time.time() - started < 3,
            "seeded: the owner's line is this script itself → it runs once, no loop, one cache line", out[-160:])
     planted = tmp / "planted"
     marker = plant_bash(planted)
@@ -6066,8 +6072,8 @@ def g_engine_statusline(tmp: Path) -> None:
     expect(rc == 0 and "PLANTED" not in out and not marker.exists() and "Drill" in out,
            "seeded: a bash planted inside the project and reachable through PATH is refused — own line instead",
            out[-160:])
-    expect(rc == 0 and "sandbox: უცნობია" in out and "ქეში თბილია" in out,
-           "seeded: that copy has no tools/sandbox_state.py → the cache line says 'sandbox: უცნობია' with the cause, "
+    expect(rc == 0 and "sandbox: unknown" in out and "cache warm" in out,
+           "seeded: that copy has no tools/sandbox_state.py → the cache line says 'sandbox: unknown' with the cause, "
            "never a silent omission (ADR-0014)", out[-200:])
     if os.name == "nt":
         wsl_sl = tmp / "sl-wsl" / "System32"
@@ -6081,22 +6087,22 @@ def g_engine_statusline(tmp: Path) -> None:
     cold_transcript = sl_transcript(t / "payload.jsonl", 120, 119, 400_000)
     rc, out = show(cold_transcript, cache={"warm": True, "ttl": "1h", "expires_at": time.time() + 1800,
                                            "recache_tokens_if_cold": 400_000})
-    expect("ქეში თბილია" in out and "❄" not in out, "seeded: Claude Code's own prompt_cache field says warm → warm, "
+    expect("cache warm" in out and "❄" not in out, "seeded: Claude Code's own prompt_cache field says warm → warm, "
            "even though the transcript alone would say cold (the payload wins)", out[-160:])
     rc, out = show(cold_transcript, cache={"warm": False, "ttl": "1h", "expires_at": time.time() + 1800,
                                            "recache_tokens_if_cold": 400_000})
     expect("❄" in out and "≈$0.80" in out, "seeded: prompt_cache says not warm → cold with the rewrite price, even "
            "before its clock runs out", out[-160:])
     rc, out = show(None)
-    expect(rc == 0 and "ქეში: უცნობია" in out and "თბილია" not in out,
+    expect(rc == 0 and "cache: unknown" in out and "warm" not in out,
            "seeded: no transcript → 'unknown', never 'warm'", out[-160:])
     rc, out = show(Path("//drill-no-such-host/share/t.jsonl"))
-    expect(rc == 0 and "ქსელური გზა" in out, "seeded: a network transcript path → never opened, 'unknown'", out[-160:])
+    expect(rc == 0 and "network path" in out, "seeded: a network transcript path → never opened, 'unknown'", out[-160:])
     rc, out = show(None, cache={"expires_at": 1e30})
-    expect(rc == 0 and "ქეში: უცნობია" in out and "Drill" in out,
+    expect(rc == 0 and "cache: unknown" in out and "Drill" in out,
            "seeded: an impossible expiry time → the cache half says 'unknown', the first line still shows", out[-160:])
     rc, out = show(None, stdin="not json {")
-    expect(rc == 0 and "ქეში: უცნობია" in out and "Traceback" not in out,
+    expect(rc == 0 and "cache: unknown" in out and "Traceback" not in out,
            "seeded: an unreadable payload → still a status line (exit 0, 'unknown'), never a traceback", out[-160:])
 
 
@@ -6112,7 +6118,7 @@ def g_statusline(tmp: Path, path: str | None) -> None:
             "context_window": {"used_percentage": 12, "context_window_size": 1000000}}
     node = shutil.which("node") or "node"
     rc, out, _ = check([node, path], stdin=json.dumps(data), env={"CLAUDE_STATUSLINE_STATE_DIR": str(state)})
-    expect("↻3" in out and "ახალი სესია" in out, "seeded: 3 compactions → red ↻3 'ახალი სესია' badge", out[:160])
+    expect("↻3" in out and "new session" in out, "seeded: 3 compactions → red ↻3 'new session' badge", out[:160])
     data["session_id"] = "fresh-0000"
     rc, out, _ = run([node, path], stdin=json.dumps(data), env={"CLAUDE_STATUSLINE_STATE_DIR": str(state)})
     expect("↻" not in out, "control: no counter → no badge", out[:160], kind="control")

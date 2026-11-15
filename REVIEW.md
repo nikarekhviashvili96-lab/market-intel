@@ -1,12 +1,12 @@
 ---
 id: review
 type: guide
-title: REVIEW — რას ამოწმებს ყოველი review (ადამიანი, subagent, ორკესტრაციის checker)
+title: REVIEW — what every review checks (a person, a subagent, an orchestration checker)
 ---
 
 # REVIEW.md
 
-> **მფლობელისთვის:** ეს ფაილი მიმომხილველებისთვისაა — `spec-reviewer` და `verifier` subagent-ებისთვის, ორკესტრაციის checker-ებისთვის (I ეტაპზე — Opus 5.5 და Sonnet 5.5) და ნებისმიერი ადამიანისთვის. ის ამბობს, რას ვამოწმებთ, რამდენად მძიმეა შეცდომა და რა ფორმით ვწერთ დასკვნას. ინგლისურადაა, რადგან მოდელებისთვის უფრო ზუსტია; გადაწყვეტილება: [[ADR-0006-deterministic-gates-and-evals]].
+> **For the owner:** this file is for reviewers — the `spec-reviewer` and `verifier` subagents, the orchestration checkers (at stage I — Opus 5.5 and Sonnet 5.5) and any person. It says what we check, how serious an error is and in what form we write the conclusion. Decision: [[ADR-0006-deterministic-gates-and-evals]].
 
 This file is the review contract for this repository. Machine checks come first: a review never overrides a failing gate (`bash .claude/hooks/py.sh tools/gates/gate.py`), and a finding counts only when it is located (file:line or section/ID) and evidenced.
 

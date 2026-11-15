@@ -13,13 +13,13 @@ THE INDEPENDENT AUDIT (a different model, fresh context):
 
 Write in Georgian (identifiers in English):
 
-1. „აუდიტზე პასუხი" — a table: finding | accept / reject | what changes (or why rejected).
+1. "Response to the audit" — a table: finding | accept / reject | what changes (or why rejected).
    Reject only with a concrete reason; "the maker disagrees" is not a reason.
-2. „სად არ შევთანხმდით" — where your final position still differs from the checker's, stated
+2. "Where we did not agree" — where your final position still differs from the checker's, stated
    fairly from both sides, so the owner can choose.
 3. The final ADR draft in a fenced ```markdown block, in this repository's ADR format:
    frontmatter with id: ADR-NNNN (leave NNNN literally — /adr assigns the number), type: adr,
-   title, status: proposed, date, related links; then sections კონტექსტი, გადაწყვეტილება,
-   განხილული ალტერნატივები, შედეგები, დადასტურება.
+   title, status: proposed, date, related links; then sections Context, Decision,
+   Alternatives considered, Consequences, Verification.
 
 Do not mark anything accepted — only the owner approves (/approve).

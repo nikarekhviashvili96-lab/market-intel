@@ -459,7 +459,7 @@ def gate_tasks(root: Path, files: list[Path], repo: Path | None = None, **_) -> 
                 continue
             done = TASK_DONE_RE.search(body)
             if not done or not (done.group(2) or "").strip():
-                bad.append(f"{where}: {tid} is ticked without a receipt — end the line with `✓ YYYY-MM-DD · <commit | მფლობელი | file>`")
+                bad.append(f"{where}: {tid} is ticked without a receipt — end the line with `✓ YYYY-MM-DD · <commit | owner | file>`")
                 continue
             for sha in SHA_RE.findall(done.group(2)):
                 ok = commit_exists(repo or root, sha)

@@ -24,7 +24,7 @@ paths:
   catches any status without an owner record).
 - **Frozen:** accepted intent, approved spec, decided ADR, live plan. Change = reopen (an edit that only sets
   `status: draft`), then edit, then ask the owner to approve again. An ADR is never reopened — write a
-  new one with `supersedes: "[[ADR-…]]"`. Approved plans: tick boxes, append under `## გადახრები`,
+  new one with `supersedes: "[[ADR-…]]"`. Approved plans: tick boxes, append under `## გადახრები` (deviations),
   approved → in-progress → done; done → live is the owner's `/approve live N` alone (stage 6, ADR-0013) —
   a live plan is never reopened, what follows it is a new spec.
 - **Links:** `[[file-stem]]` — the FILE name, not the id (`[[ADR-0003-context-graph-obsidian]]`, not

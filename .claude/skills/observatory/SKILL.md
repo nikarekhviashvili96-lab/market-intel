@@ -11,9 +11,9 @@ allowed-tools: Bash(bash .claude/hooks/py.sh tools/observe.py), Bash(bash .claud
    id prefix or `last`; for "the last N days" run `bash .claude/hooks/py.sh tools/observe.py sessions --days N`.
 2. Exit 2 (`OBSERVE INCONCLUSIVE`) means nothing was proved — say so plainly; never present it as "nothing happened".
 3. Explain to the owner in 2–4 connected paragraphs in the owner's language (`CLAUDE.md` → Language): how much was done; which files changed and why (name the
-   task `D-NNN` or plan task it served); every line under "ბრძანებები, რომლებსაც ყურადღება სჭირდება"; every security
+   task `D-NNN` or plan task it served); every line under "Commands that need attention"; every security
    event — `GUARD[..]` (what was refused and why), `SENTINEL[R1/R2]` (a key appeared — where, and that the owner should
-   rotate it), `SENTINEL[I1/I2]` (suspicious outside text); permission denials; token use; and the "ქეში და ხარჯი"
+   rotate it), `SENTINEL[I1/I2]` (suspicious outside text); permission denials; token use; and the "Cache and cost"
    section — the API-price yardstick (a measure of the subscription limits, not a bill), the share read from the
    cache, and every rebuild with its cause; for an avoidable one (a long pause, a restart, a model switch) name
    the habit that avoids it ([[process]] §5, ADR-0010). `--session all` measures every session of the project.

@@ -9,35 +9,35 @@ spec: "[[SPEC-NNNN-slug]]"
 adrs: []
 ---
 
-# PLAN-NNNN: <სათაური>
+# PLAN-NNNN: <title>
 
-## 1. მიდგომა
+## 1. Approach
 
-ერთი აბზაცი: როგორ აშენდება და რატომ ასე (ბმული შესაბამის ADR-ებზე).
+One paragraph: how it will be built and why this way (links to the relevant ADRs).
 
-## 2. ამოცანები
+## 2. Tasks
 
-- [ ] T1 — <ტესტი / eval, რომელიც ჯერ ჩავარდება> (AC-001) — verify: `<ბრძანება>`
-- [ ] T2 — <კოდი> (REQ-001, AC-001) — verify: `bash .claude/hooks/py.sh tools/gates/gate.py`
+- [ ] T1 — <a test / eval that fails first> (AC-001) — verify: `<command>`
+- [ ] T2 — <code> (REQ-001, AC-001) — verify: `bash .claude/hooks/py.sh tools/gates/gate.py`
 
-## 3. კარიბჭეები, ტესტები და evals
+## 3. Gates, tests and evals
 
-- უნდა იყოს მწვანე: …
-- ემატება (თითოეულს — დრილი): …
+- Must be green: …
+- Added (each with its drill): …
 
-## 4. ორკესტრაცია
+## 4. Orchestration
 
-კოდის ციკლი ([[ADR-0005-maker-checker-orchestration]], I ეტაპი): კოდს Sonnet 5.5 წერს, Opus 5.5 ამოწმებს, მაქს. 2 ბრუნი თითო ამოცანაზე — მხოლოდ თუ `orchestration/config.toml`-ში `enabled = true`.
+Code loop ([[ADR-0005-maker-checker-orchestration]], stage I): Sonnet 5.5 writes the code, Opus 5.5 checks it, at most 2 rounds per task — only if `orchestration/config.toml` has `enabled = true`.
 
-## 5. რისკები და უკან დაბრუნება
+## 5. Risks and rollback
 
-| რისკი | შემცირება | უკან დაბრუნება |
+| Risk | Mitigation | Rollback |
 |---|---|---|
 
-## 6. დასრულების კრიტერიუმი
+## 6. Done when
 
-ყველა ამოცანა მონიშნულია; ყველა gate მწვანეა; `verifier` → `VERDICT: pass`; მფლობელმა შედეგი თვალით ნახა.
+Every task is ticked; every gate is green; `verifier` → `VERDICT: pass`; the owner has seen the result with their own eyes.
 
 ## გადახრები
 
-(შესრულებისას ემატება, ძველი არ იშლება: `YYYY-MM-DD — რა შეიცვალა და რატომ`)
+(Deviations — the heading stays in Georgian: the guard allows edits of an approved plan under it. Added during execution, old lines are never removed: `YYYY-MM-DD — what changed and why`)

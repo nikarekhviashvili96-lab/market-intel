@@ -5,7 +5,7 @@
 Claude Code already writes every step of a session to ~/.claude/projects/<project>/<session>.jsonl —
 tool calls with their inputs, results and errors, hook output, permission denials, token usage — and
 every subagent to <session>/subagents/*.jsonl. This tool only reads those files: no extra hook, no
-runtime cost, no second log that could drift from the first. The report is in Georgian (ADR-0007).
+runtime cost, no second log that could drift from the first. The report is in English (owner, 2026-11-15).
 
   bash .claude/hooks/py.sh tools/observe.py report [--session ID|last|all] [--brief] [--json]
   bash .claude/hooks/py.sh tools/observe.py sessions [--days N]
@@ -119,21 +119,21 @@ def rel_path(raw: str, root: Path) -> str:
     try:
         return Path(raw).resolve().relative_to(root).as_posix()
     except (ValueError, OSError):
-        return "გარეთ: " + clean(raw, 80)
+        return "outside: " + clean(raw, 80)
 
 
 def git_kind(seg: list[str], start: int) -> str | None:
     sub, rest, _ = guard.git_subcommand(seg, start)
     flags = {a for a in rest if a.startswith("-")}
     if sub in GIT_WRITES or (sub == "config" and not flags & {"--get", "--get-all", "--get-regexp", "--list", "-l"}):
-        return "git-ის ჩანაწერი"
+        return "git write"
     if sub in ("tag", "branch") and (any(not a.startswith("-") for a in rest)
                                      or flags & {"-d", "-D", "--delete", "-m", "-M", "-f", "--force"}):
-        return "git-ის ჩანაწერი"
+        return "git write"
     if sub in GIT_READ_FORMS and rest and rest[0] not in GIT_READ_FORMS[sub]:
-        return "git-ის ჩანაწერი"
+        return "git write"
     if sub == "stash" and not rest:
-        return "git-ის ჩანაწერი"
+        return "git write"
     return None
 
 
@@ -146,11 +146,11 @@ def notable_kind(seg: list[str], word: str, start: int) -> str | None:
     python = bool(re.fullmatch(r"py|python[\d.]*", word)) or launcher  # python3.12, .venv/bin/python, py.sh
     pip_module = python and "-m" in args and "pip" in args and "install" in args
     if word in REMOTE_RUNNERS or pip_module or (word in INSTALLERS and INSTALL_SUBCMDS & set(args)):
-        return "დაყენება"
+        return "install"
     if word in DELETERS or (word == "find" and "-delete" in args):
-        return "წაშლა"
+        return "delete"
     if word in NETWORK or (word == "gh" and args[:1] == ["api"]):
-        return "ქსელი"
+        return "network"
     return None
 
 
@@ -181,7 +181,7 @@ def on_tool_use(r: Report, name: str, ti: dict, root: Path, sub: bool) -> None:
         r.files_written[rel_path(str(ti.get("file_path") or ti.get("notebook_path") or "?"), root)] += 1
     elif name in READ_TOOLS:
         raw = ti.get("file_path") or ti.get("path")
-        r.reads_outside += bool(raw) and rel_path(str(raw), root).startswith("გარეთ")
+        r.reads_outside += bool(raw) and rel_path(str(raw), root).startswith("outside: ")
     elif name in SHELL_TOOLS:
         r.commands += 1
         for kind, text in notable_commands(str(ti.get("command") or "")):
@@ -296,7 +296,7 @@ def read_file(r: Report, path: Path, root: Path, sub: bool) -> None:
                     if isinstance(item, dict) and item.get("filePath"):
                         r.files_via_shell[rel_path(str(item["filePath"]), root)] += 1
                 if diff.get("moreFiles"):
-                    r.files_via_shell["(და კიდევ — Claude Code-მა ყველა არ ჩამოთვალა)"] += int(diff.get("moreFiles") or 0)
+                    r.files_via_shell["(and more — Claude Code did not list them all)"] += int(diff.get("moreFiles") or 0)
             content = msg.get("content")
             for c in content if isinstance(content, list) else []:
                 if isinstance(c, dict) and c.get("type") == "tool_result":
@@ -348,61 +348,61 @@ def brief(r: Report) -> str:
     changed = len(set(r.files_written) | set(r.files_via_shell))
     cache = cache_cost.summarize(r.calls)
     cost = ""
-    unpriced = f", ფასის გარეშე: {', '.join(cache['unpriced'])}" if cache["unpriced"] else ""
+    unpriced = f", unpriced: {', '.join(cache['unpriced'])}" if cache["unpriced"] else ""
     if cache["usd"] is not None:
-        share = f", ქეშიდან {cache['cache_share']}%" if cache["cache_share"] is not None else ""
-        cost = f" · ≈${cache['usd']:.2f} API-ის ფასით{share}{unpriced}"
+        share = f", {cache['cache_share']}% from cache" if cache["cache_share"] is not None else ""
+        cost = f" · ≈${cache['usd']:.2f} at API prices{share}{unpriced}"
     elif cache["requests"]:
-        cost = f" · ფასი უცნობია{unpriced}"
-    return (f"აუდიტი ({', '.join(s[:8] for s in r.sessions)}): {actions(r)} მოქმედება · {changed} ფაილი "
-            f"შეიცვალა · {r.commands} ბრძანება · guard-ის ბლოკი {sum(r.guard.values())}"
+        cost = f" · price unknown{unpriced}"
+    return (f"audit ({', '.join(s[:8] for s in r.sessions)}): {actions(r)} actions · {changed} files "
+            f"changed · {r.commands} commands · guard blocks {sum(r.guard.values())}"
             f"{' (' + ', '.join(sorted(r.guard)) + ')' if r.guard else ''} · sentinel {sum(r.sentinel.values())}"
-            f"{' (' + ', '.join(sorted(r.sentinel)) + ')' if r.sentinel else ''} · უარყოფილი ნებართვა "
-            f"{sum(r.denials.values())} · ტოკენები: {num(r.tokens['input'] + r.tokens['cache_read'] + r.tokens['cache_write'])}"
-            f" შესვლა / {num(r.tokens['output'])} გამოსვლა{cost}")
+            f"{' (' + ', '.join(sorted(r.sentinel)) + ')' if r.sentinel else ''} · permission denials "
+            f"{sum(r.denials.values())} · tokens: {num(r.tokens['input'] + r.tokens['cache_read'] + r.tokens['cache_write'])}"
+            f" in / {num(r.tokens['output'])} out{cost}")
 
 
 def full(r: Report, src: Path) -> str:
     t = r.tools
-    groups = {"წაკითხვა": READ_TOOLS, "ჩაწერა": WRITE_TOOLS, "ბრძანება": SHELL_TOOLS, "ვებ": WEB_TOOLS,
-              "subagent-ის გაშვება": AGENT_TOOLS, "skill": {"Skill"}}
+    groups = {"read": READ_TOOLS, "write": WRITE_TOOLS, "command": SHELL_TOOLS, "web": WEB_TOOLS,
+              "subagent run": AGENT_TOOLS, "skill": {"Skill"}}
     shown = {k: sum(t[n] for n in names) for k, names in groups.items()}
     shown["MCP"] = sum(v for k, v in t.items() if k.startswith("mcp__"))
-    shown["სხვა"] = actions(r) - sum(shown.values())
+    shown["other"] = actions(r) - sum(shown.values())
     out = [
-        f"# დაკვირვება — {', '.join(s[:8] for s in r.sessions)}",
-        f"დრო: {local(r.start)} – {local(r.end)} · ბრანჩი: {r.branch or '?'} · Claude Code {r.version or '?'} · "
-        f"მოდელები: {', '.join(r.models) or '?'}",
+        f"# Observation — {', '.join(s[:8] for s in r.sessions)}",
+        f"time: {local(r.start)} – {local(r.end)} · branch: {r.branch or '?'} · Claude Code {r.version or '?'} · "
+        f"models: {', '.join(r.models) or '?'}",
         "",
-        f"## მოქმედებები: {actions(r)} (მათგან subagent-ებმა — {r.by_subagents}, {r.subagent_files} ფაილი)",
+        f"## Actions: {actions(r)} (by subagents — {r.by_subagents}, {r.subagent_files} files)",
         " · ".join(f"{k}: {v}" for k, v in shown.items()),
-        f"პროექტის გარეთ წაკითხული: {r.reads_outside}",
+        f"read outside the project: {r.reads_outside}",
         "",
-        f"## შეცვლილი ფაილები ({len(set(r.files_written) | set(r.files_via_shell))})",
+        f"## Changed files ({len(set(r.files_written) | set(r.files_via_shell))})",
         *[f"- {p} (×{n})" for p, n in sorted(r.files_written.items())],
-        *[f"- {p} (ბრძანებით ×{n})" for p, n in sorted(r.files_via_shell.items())],
-        "(ბრძანებით შეცვლილი ჩანს მხოლოდ ის ფაილი, რომელსაც Claude Code ადევნებდა თვალს — სრული სია მხოლოდ git-ს აქვს)",
+        *[f"- {p} (by command ×{n})" for p, n in sorted(r.files_via_shell.items())],
+        "(a file changed by a command shows only if Claude Code tracked it — only git has the full list)",
         "",
-        "## ბრძანებები, რომლებსაც ყურადღება სჭირდება",
-        *([f"- {x}" for x in r.notable] or ["- არცერთი (git-ის ჩანაწერი, დაყენება, წაშლა, ქსელი)"]),
+        "## Commands that need attention",
+        *([f"- {x}" for x in r.notable] or ["- none (git write, install, delete, network)"]),
         "",
-        f"## ვებ და MCP\nვებ: {counts(r.web)}\nMCP: {counts(r.mcp)}",
-        f"subagent-ები: {'; '.join(r.agents) or '—'}",
-        f"skill-ები: {counts(r.skills)}",
+        f"## Web and MCP\nweb: {counts(r.web)}\nMCP: {counts(r.mcp)}",
+        f"subagents: {'; '.join(r.agents) or '—'}",
+        f"skills: {counts(r.skills)}",
         "",
-        "## უსაფრთხოება",
-        f"- guard-მა შეაჩერა: {sum(r.guard.values())} ({counts(r.guard)})",
+        "## Security",
+        f"- stopped by the guard: {sum(r.guard.values())} ({counts(r.guard)})",
         *[f"  - {x}" for x in r.guard_examples],
-        f"- sentinel: {sum(r.sentinel.values())} ({counts(r.sentinel)}) — R1/R2 გასაღები გამოჩნდა, I1/I2 საეჭვო ტექსტი",
-        f"- უარყოფილი ნებართვა: {sum(r.denials.values())} ({counts(r.denials)})",
-        f"- ხელსაწყოს სხვა შეცდომები: {r.tool_errors}",
+        f"- sentinel: {sum(r.sentinel.values())} ({counts(r.sentinel)}) — R1/R2 a key showed up, I1/I2 suspicious text",
+        f"- permission denials: {sum(r.denials.values())} ({counts(r.denials)})",
+        f"- other tool errors: {r.tool_errors}",
         "",
-        f"## ტოკენები\nშესვლა {num(r.tokens['input'])} · cache-დან {num(r.tokens['cache_read'])} · "
-        f"cache-ში ჩაწერა {num(r.tokens['cache_write'])} · გამოსვლა {num(r.tokens['output'])}",
+        f"## Tokens\nin {num(r.tokens['input'])} · from cache {num(r.tokens['cache_read'])} · "
+        f"cache write {num(r.tokens['cache_write'])} · out {num(r.tokens['output'])}",
         "",
         *cache_cost.render(cache_cost.summarize(r.calls)),
         "",
-        f"წყარო: {src} · ხაზები: {r.lines} · წაუკითხავი: {r.unreadable}",
+        f"source: {src} · lines: {r.lines} · unreadable: {r.unreadable}",
     ]
     return "\n".join(out)
 

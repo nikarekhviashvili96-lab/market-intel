@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""One Georgian line at the end of a session: which engine files changed, and whether their commit passed the drill
+"""One line at the end of a session: which engine files changed, and whether their commit passed the drill
 (ADR-0015). Information, not a lock — the person sees that the engine changed and can ask why.
 
   bash .claude/hooks/py.sh tools/engine_line.py [--root DIR] [--since REV]
@@ -29,20 +29,20 @@ PREFIXES = (".claude/hooks/", ".claude/settings", ".claude/skills/", ".claude/ag
             "orchestration/prompts/")
 RECEIPTS = "engine-drill-receipts"
 # (a file, or a folder ending in /, and the words a person reads) — the first that matches wins
-WORDS = ((".claude/hooks/guard.py", "⚠ guard (უსაფრთხოების შემმოწმებელი)"), (".githooks/", "⚠ commit-ის შემოწმება"),
-         (".claude/hooks/sentinel.py", "sentinel (გარე ტექსტისა და გასაღებების მცველი)"),
-         (".claude/hooks/episodic.py", "სესიების მეხსიერება"), (".claude/hooks/stop_gate.py", "ტურის ბოლოს შემოწმება"),
-         (".claude/hooks/statusline.py", "სტატუსის ხაზი"), (".claude/hooks/firstrun.py", "პირველი გაშვება"),
-         (".claude/hooks/py.sh", "Python-ის გამშვები"), (".claude/hooks/", "hook-ები"),
-         (".claude/settings", "ნებართვების ფაილი"), ("tools/gates/gates.toml", "კარიბჭეების სია"),
-         ("tools/gates/drill.py", "დრილი"), ("tools/gates/gate.py", "კარიბჭეების გამშვები"),
-         ("tools/gates/README.md", "კარიბჭეების სახელმძღვანელო"), ("tools/gates/", "კარიბჭეები"),
-         ("tools/drill_floor.py", "დრილის იატაკი"), ("tools/engine_line.py", "სესიის ბოლოს ხაზი"),
-         ("tools/backup_line.py", "ბექაფის შეხსენება"),
-         ("tools/approve.py", "მფლობელის დამტკიცება (/approve)"), ("orchestration/", "ორკესტრაცია"))
-STATES = (("unchecked", "⚠ commit-შია, მაგრამ დრილს არ შეუმოწმებია"),
-          ("pending", "ჯერ commit-ში არ არის (დრილი commit-ზე შეამოწმებს)"),
-          ("checked", "commit-შია და დრილმა შეამოწმა ✓"))
+WORDS = ((".claude/hooks/guard.py", "⚠ guard (the safety checker)"), (".githooks/", "⚠ the commit check"),
+         (".claude/hooks/sentinel.py", "sentinel (guard of outside text and keys)"),
+         (".claude/hooks/episodic.py", "session memory"), (".claude/hooks/stop_gate.py", "end-of-turn check"),
+         (".claude/hooks/statusline.py", "status line"), (".claude/hooks/firstrun.py", "first run"),
+         (".claude/hooks/py.sh", "Python launcher"), (".claude/hooks/", "hooks"),
+         (".claude/settings", "permissions file"), ("tools/gates/gates.toml", "gate list"),
+         ("tools/gates/drill.py", "drill"), ("tools/gates/gate.py", "gate runner"),
+         ("tools/gates/README.md", "gates guide"), ("tools/gates/", "gates"),
+         ("tools/drill_floor.py", "drill floor"), ("tools/engine_line.py", "end-of-session line"),
+         ("tools/backup_line.py", "backup reminder"),
+         ("tools/approve.py", "owner's approval (/approve)"), ("orchestration/", "orchestration"))
+STATES = (("unchecked", "⚠ committed, but the drill has not checked it"),
+          ("pending", "not committed yet (the drill checks it at commit)"),
+          ("checked", "committed and checked by the drill ✓"))
 
 
 def git(root: Path, *args: str) -> str | None:
@@ -80,11 +80,11 @@ def words(path: str) -> str:
     if path.startswith(".claude/skills/") and len(parts) > 3:
         return f"skill /{parts[2]}"
     if path.startswith((".claude/agents/", ".claude/rules/")) and len(parts) > 2:
-        return ("subagent " if parts[1] == "agents" else "წესი ") + Path(parts[-1]).stem
+        return ("subagent " if parts[1] == "agents" else "rule ") + Path(parts[-1]).stem
     for start, said in WORDS:
         if path == start or (start.endswith("/") and path.startswith(start)) or path.startswith(start + "."):
             return said
-    return f"ძრავის ხელსაწყო {parts[-1]}"
+    return f"engine tool {parts[-1]}"
 
 
 def committed(root: Path, since: str | None, seen: set[str]) -> dict[str, str] | None:
@@ -129,7 +129,7 @@ def changes(root: Path, since: str | None) -> dict[str, str] | None:
 
 
 def line(root: Path, since: str | None = "HEAD") -> str | None:
-    """The Georgian line; "" when no engine file changed, None when git could not answer."""
+    """The line; "" when no engine file changed, None when git could not answer."""
     found = changes(root, since)
     if found is None:
         return None
@@ -138,7 +138,7 @@ def line(root: Path, since: str | None = "HEAD") -> str | None:
         names = list(dict.fromkeys(words(f) for f in sorted(found) if found[f] == state))
         if names:
             groups.append(f"{said}: {', '.join(names)}")
-    return "🔧 ძრავა შეიცვალა — " + "; ".join(groups) + "." if groups else ""
+    return "🔧 engine changed — " + "; ".join(groups) + "." if groups else ""
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""One Georgian line when the project's work is only on this computer: the current branch holds commits that no
+"""One line when the project's work is only on this computer: the current branch holds commits that no
 remote copy has — more than UNPUSHED_MAX of them beside the branch's copy, or any at all when the branch has no copy or
 the project no remote. Information, not a lock: uploading (`git push`) is the person's yes.
 
@@ -66,12 +66,12 @@ def last_seen(root: Path) -> str:
         except OSError:
             continue
     if not times:
-        return "fetch-ის ან push-ის კვალი არ ჩანს"
-    return "ბოლო fetch ან push — " + datetime.fromtimestamp(max(times)).strftime("%Y-%m-%d %H:%M")
+        return "no trace of a fetch or push"
+    return "last fetch or push — " + datetime.fromtimestamp(max(times)).strftime("%Y-%m-%d %H:%M")
 
 
 def line(root: Path) -> str | None:
-    """The Georgian line; "" when there is nothing to say, None when git could not answer."""
+    """The line; "" when there is nothing to say, None when git could not answer."""
     if git(root, "rev-parse", "--git-dir") is None:
         return None  # git is missing, or this folder is not a repository it can read
     if git(root, "rev-parse", "--verify", "-q", "HEAD") is None:
@@ -84,17 +84,17 @@ def line(root: Path) -> str | None:
     n = int(count)
     if n == 0:
         return ""
-    shown = f"ბრანჩის `{short(branch)}`" if branch != "HEAD" else "ამ commit-ის (detached HEAD)"
+    shown = f"branch `{short(branch)}`" if branch != "HEAD" else "this commit (detached HEAD)"
     if not remotes.split():
-        return (f"💾 ბექაფი: {shown} ატვირთული ასლი არ ჩანს — პროექტს დისტანციური ასლი (remote) არ აქვს, ამიტომ {n} "
-                "commit მხოლოდ ამ კომპიუტერზეა.")
+        return (f"💾 backup: no pushed copy of {shown} — the project has no remote copy (remote), so {n} "
+                "commit(s) exist only on this computer.")
     copy = copy_of(root, branch) if branch != "HEAD" else None
-    seen = f"{last_seen(root)}; ქსელით არ შემოწმებულა"
+    seen = f"{last_seen(root)}; not checked over the network"
     if copy is None:
-        return f"💾 ბექაფი: {shown} ატვირთული ასლი არ ჩანს — {n} commit მხოლოდ ამ კომპიუტერზეა ({seen})."
+        return f"💾 backup: no pushed copy of {shown} — {n} commit(s) exist only on this computer ({seen})."
     if n > UNPUSHED_MAX:
-        return (f"💾 ბექაფი: {n} commit მხოლოდ ამ კომპიუტერზეა (ზღვარი — {UNPUSHED_MAX}): {shown} ატვირთული ასლი "
-                f"(`{short(copy.removeprefix('refs/remotes/'))}`) მათ არ შეიცავს ({seen}).")
+        return (f"💾 backup: {n} commit(s) exist only on this computer (limit — {UNPUSHED_MAX}): the pushed copy of {shown} "
+                f"(`{short(copy.removeprefix('refs/remotes/'))}`) does not hold them ({seen}).")
     return ""
 
 

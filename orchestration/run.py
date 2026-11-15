@@ -310,8 +310,8 @@ def preflight(cfg: dict, dry: bool, *templates: str) -> list[str]:
     if problems:
         raise ConfigError("\n".join(problems))
     if not cfg.get("enabled") and not dry:
-        raise Refused("ORCHESTRATION DISABLED — ორკესტრაცია გამორთულია (orchestration/config.toml: enabled = false; "
-                      "ADR-0005). ჩართვა მფლობელის გადაწყვეტილებაა (P-001). --dry-run აჩვენებს, რა გაეშვებოდა.", EXIT_DISABLED)
+        raise Refused("ORCHESTRATION DISABLED — orchestration is off (orchestration/config.toml: enabled = false; "
+                      "ADR-0005). Switching it on is the owner's decision (P-001). --dry-run shows what would run.", EXIT_DISABLED)
     check_templates(*templates)
     deny = deny_rules()
     if not deny:
@@ -570,8 +570,8 @@ def cmd_arch(a: argparse.Namespace) -> int:
     key = topic_key(topic)
     done = completed("arch", key)
     if done >= arch["max_rounds"]:
-        raise Refused(f"ROUND CAP — ამ თემაზე უკვე {done} ციკლი შესრულდა (ლიმიტი {arch['max_rounds']}). "
-                      "გადაწყვეტს მფლობელი; ახალი კითხვა = ახალი თემა.", EXIT_CAP)
+        raise Refused(f"ROUND CAP — {done} round(s) already ran on this topic (limit {arch['max_rounds']}). "
+                      "The owner decides; a new question = a new topic.", EXIT_CAP)
     ctx_list = "\n".join(f"- {p.relative_to(ROOT).as_posix()}" for p in context_files(a.context or []))
     base = f"{dt.date.today().isoformat()}-arch-{slug(topic)}-{key}"
     maker_prompt = redact(fill("architect-maker.md", {"topic": topic, "context_files": ctx_list}))[0]
@@ -703,8 +703,8 @@ def cmd_code_check(a: argparse.Namespace) -> int:
     key = f"{plan_id}-{a.task}"
     done = completed("code", key)
     if done >= code["max_rounds"]:
-        raise Refused(f"ROUND CAP — {key}: უკვე {done} შემოწმება (ლიმიტი {code['max_rounds']}). "
-                      "მესამე ბრუნი არ არის: ღია critical/high შენიშვნებზე გადაწყვეტს მფლობელი (UNVERIFIED).", EXIT_CAP)
+        raise Refused(f"ROUND CAP — {key}: {done} review(s) already (limit {code['max_rounds']}). "
+                      "There is no third round: the owner decides on open critical/high findings (UNVERIFIED).", EXIT_CAP)
     rnd = done + 1
     earlier, earlier_meta, earlier_line = earlier_round(key, rnd, a.response)
     diff, left_out, truncated = review_input(a.base, code["max_diff_chars"])

@@ -6,8 +6,8 @@ argument-hint: "[optional focus]"
 
 # /reflect — the project improves itself, with the owner's consent
 
-1. **Read** `memory/episodes/INDEX.md` and the last ~5 episodes (their "გაკვეთილები" and
-   "წინადადებები" sections), `memory/LESSONS.md`, `memory/PROPOSALS.md`, and the latest gate/drill output
+1. **Read** `memory/episodes/INDEX.md` and the last ~5 episodes (their "Lessons" and
+   "Proposals" sections — "გაკვეთილები" and "წინადადებები" in older ones), `memory/LESSONS.md`, `memory/PROPOSALS.md`, and the latest gate/drill output
    if relevant.
 2. **Find patterns** — the same mistake twice (→ lesson + a gate that prevents it); the same multi-step
    instruction given by the owner twice (→ skill candidate); a check done by eye that a script could do
@@ -19,4 +19,4 @@ argument-hint: "[optional focus]"
 5. **Only after an explicit yes:** implement it; for a new skill use `.claude/skills/<name>/SKILL.md`
    with a name that does not collide with `~/.claude/skills` (global skills win on a clash) and a
    description that says when to use it; add a drill for any script. Then mark the proposal `[x]` with
-   the date and move it under "გადაწყვეტილი". A "no" is recorded there too, with the reason.
+   the date and move it under "გადაწყვეტილი" (decided). A "no" is recorded there too, with the reason.

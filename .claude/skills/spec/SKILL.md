@@ -15,16 +15,16 @@ comes first (a spec cannot be approved before that — `approve.py` refuses and 
    [template.md](template.md). Revising an approved spec: reopen it first (status only → draft).
 3. **Fill every section.** Requirements `REQ-NNN` each trace to a goal G*. Acceptance criteria are
    Given / When / Then, testable, and each names the gate, test or eval that will prove it — and, in the
-   column „რას დაინახავ ან გააკეთებ", what the person will see or do to check it with their own eyes
-   („ტელეფონზე გახსნი გვერდს და პირველ ეკრანზე ღილაკს დაინახავ"); a criterion nobody can see says so in
-   words („თვალით არ ჩანს — ამას ტესტი ამტკიცებს"), never an empty cell or a dash. Include
+   column "What you will see or do", what the person will see or do to check it with their own eyes
+   ("you open the page on your phone and see the button on the first screen"); a criterion nobody can see says so in
+   words ("not visible on screen — a test proves it"), never an empty cell or a dash. Include
    Georgian-language quality, grounding and the domain invariants (`REVIEW.md`, `docs/domain/`) where they
-   apply. Anything unknown → "ღია კითხვები", never a guess. The first version's scope and example criteria
+   apply. Anything unknown → "Open questions", never a guess. The first version's scope and example criteria
    for this kind of project are in `docs/guides/<kind>.md` §3. Keep a first version's spec small enough for
    a beginner to judge: about 5–8 requirements and at most ~10 acceptance criteria; ask a missing fact in
    the chat (one question per message) rather than piling up open questions — at most 3 stay in the file.
    Describe what the result does, not how it is built: the stack is decided at stage 3.
-   **Success measures (§6, ADR-0013).** Ask the person, in plain words, „რით გავიგებთ, რომ მუშაობს?“ — one
+   **Success measures (§6, ADR-0013).** Ask the person, in plain words, "how will we know it works?" — one
    question, 2–3 options with your recommendation (answers right on a sample, speed, cost per request, no
    wrong price on the page…) — and write the answer as 2–4 measures `M-NNN`, each with a threshold, where it
    is measured (a test, an eval set in `evals/`, a gate) and when (every change; weekly at stage 6). For an
@@ -34,7 +34,7 @@ comes first (a spec cannot be approved before that — `approve.py` refuses and 
 4. **Index** — add a row to `docs/specs/README.md` (wikilink to the file). When complete, set
    `status: review`.
 5. **Review** — run the `spec-reviewer` subagent on the file. Fix critical/high findings; record the
-   rest under "ღია კითხვები". Then the builder check ([builder-check.md](../intent/builder-check.md)) on the
+   rest under "Open questions". Then the builder check ([builder-check.md](../intent/builder-check.md)) on the
    spec, its questions sorted into the same three piles as in `/intent` step 4: the person's pile — at most
    three, in one message — goes with the summary of step 7, and their answers go into the spec before they
    approve it.

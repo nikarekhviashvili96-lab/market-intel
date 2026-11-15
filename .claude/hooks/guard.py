@@ -358,20 +358,20 @@ def check_edit(tool: str, ti: dict, payload: dict, root: Path) -> int:
     if rel is not None:
         record_touched(payload.get("session_id") or "", root / rel)
     if MARKER_RE.search(new_content(tool, ti)):
-        return block("S2", f"{where}: ჩასაწერ ტექსტში დგას დაფარვის ნიშანი — sentinel-მა ამ ადგილას ნამდვილი საიდუმლო "
-                           "დაგიმალა, და ნიშნის ჩაწერა ფაილში ნამდვილ მნიშვნელობას სამუდამოდ წაშლიდა. შეცვალე მხოლოდ "
-                           "სხვა ხაზები (Edit), საიდუმლოიან ხაზს ნუ შეეხები; თუ ის ხაზიც უნდა შეიცვალოს, სთხოვე მფლობელს.")
+        return block("S2", f"{where}: the text to write holds a redaction marker — the sentinel hid a real secret from you here, and "
+                           "writing the marker into the file would erase the real value for good. Change only the "
+                           "other lines (Edit) and leave the secret's line alone; if that line must change too, ask the owner.")
     if SECRET_RE.search(where) or (rel is None and SECRET_RE.search(path.replace("\\", "/"))):
-        return block("G6", f"{where} საიდუმლოების ფაილია — აგენტი მას არ წერს და არ კითხულობს (ADR-0007). "
-                           "ცვლადის სახელი და PLACEHOLDER ჩაწერე .env.example-ში; ნამდვილ მნიშვნელობას მფლობელი ჩასვამს.")
+        return block("G6", f"{where} is a secrets file — the agent neither writes nor reads it (ADR-0007). "
+                           "Write the variable's name and a PLACEHOLDER into .env.example; the owner puts in the real value.")
     if GIT_CONFIG_RE.search(where):
-        return block("G8", f"{where} git-ის საკუთარი კონფიგურაციაა: core.hooksPath და include იქ ინახება, და ხელით "
-                           "ჩაწერილი ხაზი commit-ის შემოწმებებს თიშავს. პარამეტრი `git config`-ით შეცვალე — ის ჯერ "
-                           "მფლობელს ეკითხება.")
+        return block("G8", f"{where} is git's own configuration: core.hooksPath and include live there, and a line written by "
+                           "hand switches off the commit checks. Change the setting with `git config` — that asks the "
+                           "owner first.")
     low = where.lower()
     if low == LEDGER or (rel is None and low.endswith("/" + LEDGER)):
-        return block("G1", f"{LEDGER} ჩაწერა მხოლოდ მფლობელის `/approve`-ით შეიძლება (tools/approve.py) — ამ "
-                           "პროექტში თუ მის სხვა ასლში. Only the owner's /approve writes the approval ledger.")
+        return block("G1", f"{LEDGER} is written only by the owner's `/approve` (tools/approve.py) — in this "
+                           "project or any copy of it. Only the owner's /approve writes the approval ledger.")
     if SKILL_FILE_RE.search(where):
         unseen = check_skill(tool, ti, root / rel if rel is not None else resolved(path, payload.get("cwd"), root), where)
         if unseen:
@@ -379,11 +379,11 @@ def check_edit(tool: str, ti: dict, payload: dict, root: Path) -> int:
     if rel is None:
         return 0
     if low == EP_INDEX.lower():
-        return block("G2", "memory/episodes/INDEX.md გენერირებულია — გაუშვი "
+        return block("G2", "memory/episodes/INDEX.md is generated — run "
                            "`bash .claude/hooks/py.sh .claude/hooks/episodic.py index`.")
     if low == ENGINE_PYTHON_NOTE:
-        return block("G2", f"{ENGINE_PYTHON_NOTE} გენერირებულია — მას მხოლოდ `.claude/hooks/py.sh` წერს (ნაპოვნი Python-ის "
-                           "გზა). სხვა პროგრამაზე მითითება ყველა hook-ს Python-ის ნაცვლად იმ პროგრამით გაუშვებდა.")
+        return block("G2", f"{ENGINE_PYTHON_NOTE} is generated — only `.claude/hooks/py.sh` writes it (the path of the Python it "
+                           "found). Pointing it at another program would run every hook with that program instead of Python.")
     over = check_budget(tool, ti, root, rel)
     if over:
         return over
@@ -408,18 +408,18 @@ def check_budget(tool: str, ti: dict, root: Path, rel: str) -> int:
     if low == BUDGET_FILE:
         b0, b1 = budget_in(before or ""), budget_in(after)
         if b0 is not None and (b1 is None or b1 > b0):
-            return block("G7", f"{rel}: ბიუჯეტს ({b0:,} ბაიტი ყოველთვის ჩატვირთულ ტექსტზე) მხოლოდ მფლობელი ზრდის ან "
-                               "აუქმებს — `/approve budget <N>`. შემცირება შეიძლება; სხვა ცვლილებისთვის max_bytes "
-                               "უცვლელი დატოვე.")
+            return block("G7", f"{rel}: only the owner raises or removes the budget ({b0:,} bytes of always-loaded text) — "
+                               "`/approve budget <N>`. Lowering it is allowed; for any other change leave max_bytes "
+                               "as it is.")
         # A drill gate switched off holds 0: it arms no case. One the owner has already switched off holds its written
         # floor, so an edit of another line of it is no lowering.
         drill0 = drill_gate(before)
         f0, f1 = floor_of(drill0), held_in(after) if runs_at_commit(drill0) else floor_in(after)
         if f0 is not None and (f1 is None or f1 < f0):  # ADR-0015: the floor rises with the drill, the owner lowers it
-            return block("G7", f"{rel}: დრილის იატაკს ({f0:,} შემთხვევა) მხოლოდ მფლობელი წევს, აუქმებს ან თიშავს "
-                               "(გამორთული დრილი არც ერთ შემთხვევას არ ამოწმებს) — `/approve floor <N>`. აწევა შეიძლება "
-                               "(დრილთან ერთად); სხვა ცვლილებისთვის floor და დრილის gate უცვლელი დატოვე, ამოღებული "
-                               "შემთხვევა კი დრილში დააბრუნე.")
+            return block("G7", f"{rel}: only the owner lowers, removes or switches off the drill floor ({f0:,} cases) "
+                               "(a switched-off drill checks no case) — `/approve floor <N>`. Raising it is allowed "
+                               "(together with the drill); for any other change leave the floor and the drill gate as they are, "
+                               "and put a removed case back into the drill.")
         return 0
     cap = budget(root)
     if cap is None:
@@ -430,11 +430,11 @@ def check_budget(tool: str, ti: dict, root: Path, rel: str) -> int:
     if total <= cap or total <= now:
         return 0
     largest = " · ".join(f"{f} {n:,}" for f, n in sorted(files.items(), key=lambda kv: -kv[1])[:3])
-    return block("G7", f"{rel}: ყოველ სესიაში ჩატვირთული ტექსტი {now:,}-დან {total:,} ბაიტამდე გაიზრდებოდა — ბიუჯეტი "
-                       f"{cap:,}-ია, ზედმეტი {total - cap:,}. შეამოკლე ეს ან სხვა ყოველთვის ჩატვირთული ფაილი (უდიდესები: "
-                       f"{largest}): დეტალი გადაიტანე ფაილში, რომელიც მხოლოდ საჭიროებისას იკითხება, და აქ ერთხაზიანი "
-                       "მითითება დატოვე. შემცირება ყოველთვის გადის; ბიუჯეტს მხოლოდ მფლობელი ზრდის — `/approve budget "
-                       "<N>`. სია: `bash .claude/hooks/py.sh tools/budget.py`.")
+    return block("G7", f"{rel}: the text every session loads would grow from {now:,} to {total:,} bytes — the budget is "
+                       f"{cap:,}, {total - cap:,} over. Shorten this or another always-loaded file (largest: "
+                       f"{largest}): move the detail into a file read only when needed and leave a one-line "
+                       "pointer here. Shrinking always passes; only the owner raises the budget — `/approve budget "
+                       "<N>`. List: `bash .claude/hooks/py.sh tools/budget.py`.")
 
 
 def check_episode(tool: str, ti: dict, payload: dict, root: Path, rel: str) -> int:
@@ -448,9 +448,9 @@ def check_episode(tool: str, ti: dict, payload: dict, root: Path, rel: str) -> i
     if before is not None and after is not None and \
             without_fm_keys(before, FOREIGN_EPISODE_MUTABLE) == without_fm_keys(after, FOREIGN_EPISODE_MUTABLE):
         return 0
-    return block("G3", f"{rel} სხვა სესიის ეპიზოდია — ისტორია მხოლოდ ემატება. შეგიძლია შეცვალო მხოლოდ "
-                       f"{', '.join(sorted(FOREIGN_EPISODE_MUTABLE))}; ახალი ფაქტი ჩაწერე შენი სესიის ეპიზოდში "
-                       "ან memory/LESSONS.md-ში.")
+    return block("G3", f"{rel} is another session's episode — history is only appended to. You may change only "
+                       f"{', '.join(sorted(FOREIGN_EPISODE_MUTABLE))}; write a new fact into your own session's episode "
+                       "or memory/LESSONS.md.")
 
 
 def injected_commands(text: str) -> list[str]:
@@ -490,14 +490,14 @@ def check_skill(tool: str, ti: dict, p: Path, where: str) -> int:
             had[cmd] -= 1  # already in the file: it was read when it was written
             continue
         if check_shell(cmd):
-            return block("G9", f"{where}: skill-ისა და slash-ბრძანების `!`-ხაზი ბრძანებას გაშვებამდე, ყოველგვარი hook-ის "
-                               "გარეშე ასრულებს (L-004). ეს ბრძანება ინსტრუმენტით გაშვებისასაც უარყოფილი იქნებოდა "
-                               "(მიზეზი ზემოთაა), ამიტომ skill-ში ჩაწერაც უარყოფილია. ასეთ ხაზს მხოლოდ მფლობელი წერს, "
-                               "ხელით.")
+            return block("G9", f"{where}: a skill's or slash command's `!` line runs its command before any tool call, without any "
+                               "hook (L-004). This command would be refused as a tool call too "
+                               "(the reason is above), so writing it into a skill is refused as well. Only the owner writes such a line, "
+                               "by hand.")
     if len(APPROVER_RE.findall(allowed_tools(after))) > len(APPROVER_RE.findall(allowed_tools(before or ""))):
-        return block("G9", f"{where}: allowed-tools-ში დამტკიცების სკრიპტის წინასწარ ნებართვას მხოლოდ მფლობელი წერს, "
-                           "ხელით — ის მფლობელის /approve skill-ს ეკუთვნის, სხვაგან კი `!`-ხაზთან ერთად აგენტს "
-                           "მფლობელის დამტკიცების გაყალბების გზას მისცემდა.")
+        return block("G9", f"{where}: only the owner writes a pre-approval of the approval script into allowed-tools, "
+                           "by hand — it belongs to the owner's /approve skill; anywhere else, together with a `!` line, it would "
+                           "give the agent a way to forge the owner's approval.")
     return 0
 
 
@@ -511,39 +511,39 @@ def check_approvable(tool: str, ti: dict, p: Path, typ: str) -> int:
     owner_only = OWNER_STATUSES.get(typ, set())
     if before is None:
         if s1 and s1 not in CREATABLE[typ]:
-            return block("G4", f"{name}: ახალი დოკუმენტი სტატუსით `{s1}` ვერ შეიქმნება — დაიწყე "
-                               f"`{sorted(CREATABLE[typ])[0]}`-ით; დამტკიცება მხოლოდ მფლობელის `/approve`-ით.")
+            return block("G4", f"{name}: a new document cannot be created with status `{s1}` — start with "
+                               f"`{sorted(CREATABLE[typ])[0]}`; approval is only the owner's `/approve`.")
         return 0
     if s1 != s0 and s1 in owner_only:
-        return block("G4", f"{name}: სტატუსს `{s1}` მხოლოდ მფლობელი ანიჭებს (`/approve`). "
-                           "შეგიძლია შეახსენო მფლობელს, თავად ვერ დაამტკიცებ.")
+        return block("G4", f"{name}: only the owner sets status `{s1}` (`/approve`). "
+                           "You can remind the owner; you cannot approve it yourself.")
     if s0 not in FROZEN[typ]:
         if typ == "plan" and s1 in ("in-progress", "done"):
-            return block("G4", f"{name}: გეგმა `{s0}` სტატუსიდან პირდაპირ `{s1}`-ზე ვერ გადავა — ჯერ მფლობელის "
-                               "`/approve plan <N>` უნდა მოხდეს.")
+            return block("G4", f"{name}: a plan cannot move from `{s0}` straight to `{s1}` — the owner's "
+                               "`/approve plan <N>` comes first.")
         return 0
     # before is frozen
     if typ == "adr":
-        return block("G5", f"{name}: გადაწყვეტილი ADR (`{s0}`) არ იცვლება. დაწერე ახალი ADR ველით "
-                           f"`supersedes: \"[[{p.stem}]]\"` და სთხოვე მფლობელს `/approve`.")
+        return block("G5", f"{name}: a decided ADR (`{s0}`) does not change. Write a new ADR with "
+                           f"`supersedes: \"[[{p.stem}]]\"` and ask the owner for `/approve`.")
     if s1 == "draft" and s0 in REOPENABLE.get(typ, set()):
         if without_fm_keys(before, {"status", "updated"}) == without_fm_keys(after, {"status", "updated"}):
             return 0  # a clean reopen: status back to draft, nothing else touched
-        return block("G5", f"{name}: ხელახლა გახსნა (status → draft) ცალკე ნაბიჯია — ჯერ მხოლოდ სტატუსი "
-                           "შეცვალე, შინაარსი შემდეგ ედიტში.")
+        return block("G5", f"{name}: reopening (status → draft) is a step of its own — change only the status first, "
+                           "the content in a later edit.")
     if typ == "plan":
         if s1 != s0 and (s0, s1) not in PLAN_MOVES:
-            return block("G5", f"{name}: დამტკიცებული გეგმის სტატუსი `{s0}` → `{s1}` არ დაიშვება "
-                               "(დაშვებულია approved→in-progress→done ან draft-ზე დაბრუნება).")
+            return block("G5", f"{name}: an approved plan's status `{s0}` → `{s1}` is not allowed "
+                               "(allowed: approved→in-progress→done, or back to draft).")
         b_main, b_dev = normalise_plan(without_fm_keys(before, {"status", "updated"}))
         a_main, a_dev = normalise_plan(without_fm_keys(after, {"status", "updated"}))
         if b_main == a_main and a_dev.startswith(b_dev):
             return 0
-        return block("G5", f"{name}: დამტკიცებულ გეგმაში შეიძლება მხოლოდ ჩამონათვალის მონიშვნა, ჩანაწერის დამატება "
-                           f"სექციაში „{DEVIATIONS_HEADING}“ და სტატუსის წინ წაწევა. სხვა ცვლილებისთვის გახსენი "
-                           "(status: draft) და სთხოვე მფლობელს ხელახლა დამტკიცება.")
-    return block("G5", f"{name}: დამტკიცებული დოკუმენტი (`{s0}`) გაყინულია. შესაცვლელად ჯერ გახსენი "
-                       "(მხოლოდ status: draft), მერე შეცვალე და სთხოვე მფლობელს ხელახლა `/approve`.")
+        return block("G5", f"{name}: in an approved plan you may only tick boxes, append an entry under "
+                           f"\"{DEVIATIONS_HEADING}\" and move the status forward. For any other change reopen it "
+                           "(status: draft) and ask the owner to approve it again.")
+    return block("G5", f"{name}: an approved document (`{s0}`) is frozen. To change it, reopen it first "
+                       "(only status: draft), then change it and ask the owner for `/approve` again.")
 
 
 def new_content(tool: str, ti: dict) -> str:
@@ -1012,50 +1012,50 @@ def hook_skip(sub: str, args: list[str]) -> tuple[str, str] | None:
 
 def hidden_block(code: str, word: str) -> int:
     word = word.replace(UNQUOTED_SUB, "$(…)")
-    return block(code, f"`{word}` — ამ სიტყვას git-ისთვის shell-ი ქმნის ($…, `…`, glob, {{…}}) და guard ვერ ხედავს, "
-                       "რა გამოვა: შეიძლება -n, --no-verify, --force, +refspec ან core.hooksPath იყოს. ოფციები, "
-                       "ქვებრძანება და სახელები პირდაპირ ჩაწერე (მაგ. `git push -u origin <ტოტი>`); ოფციის მნიშვნელობაში "
-                       "გაშლა დასაშვებია ბრჭყალებში: `git commit -m \"$(cat <<'EOF' …)\"`.")
+    return block(code, f"`{word}` — the shell makes up this word for git ($…, `…`, glob, {{…}}) and the guard cannot see "
+                       "what it becomes: it could be -n, --no-verify, --force, +refspec or core.hooksPath. Write options, "
+                       "the subcommand and names literally (e.g. `git push -u origin <branch>`); inside an option's value "
+                       "an expansion in quotes is allowed: `git commit -m \"$(cat <<'EOF' …)\"`.")
 
 
 def check_git(seg: list[str], start: int) -> int:
     sub, args, confs = git_subcommand(seg, start)
     before_git = " ".join(seg[:start]).lower()  # VAR=value prefixes and wrapper arguments (`env GIT_CONFIG_KEY_0=…`)
     if "hookspath" in before_git or any(c.lower().startswith("core.hookspath") for c in confs):
-        return block("B2", "core.hooksPath-ის გადაფარვა (-c, --config-env, GIT_CONFIG_*) თიშავს pre-commit "
-                           "კარიბჭეებს — აკრძალულია.")
+        return block("B2", "overriding core.hooksPath (-c, --config-env, GIT_CONFIG_*) switches off the pre-commit "
+                           "gates — forbidden.")
     # A config include given on the command line is read at the command line's precedence, so a file it names can
     # set core.hooksPath over the repository's own (ECC corpus, 2026-10-19).
     if any(c.lower().startswith("alias.") for c in confs):
-        return block("B2", "git-ის alias (`-c alias.…`) ჰუკ-გამშვებ ქვებრძანებას სხვა სახელით გაუშვებს — "
-                           "guard მას ვერ ცნობს, ამიტომ აკრძალულია. ქვებრძანება პირდაპირ ჩაწერე.")
+        return block("B2", "a git alias (`-c alias.…`) runs a hook-running subcommand under another name — "
+                           "the guard cannot recognise it, so it is forbidden. Write the subcommand literally.")
     if any(c.lower().startswith(("include.", "includeif.")) for c in confs) or \
             ("include" in before_git and "git_config" in before_git):
-        return block("B2", "git-ის კონფიგურაციის ჩართვა ბრძანების ხაზიდან (include.path, includeIf) core.hooksPath-ს "
-                           "გადაფარავს და pre-commit კარიბჭეებს თიშავს — აკრძალულია.")
+        return block("B2", "including git configuration from the command line (include.path, includeIf) overrides core.hooksPath "
+                           "and switches off the pre-commit gates — forbidden.")
     # What git reads in front of the subcommand: everything after `git` up to the subcommand itself.
     hidden = git_hides_option(sub, seg[start + 1:len(seg) - len(args) - bool(sub)], confs)
     if hidden:
         return hidden_block("B2", hidden)
     args = strip_redirects(args)  # a redirect target is not git's argument (review C5)
     if any(NO_VERIFY_RE.match(a) for a in args):
-        return block("B2", "`--no-verify` გამოტოვებს კარიბჭეებს (gates) — აკრძალულია. გაასწორე ის, რაც ჩავარდა.")
+        return block("B2", "`--no-verify` skips the gates — forbidden. Fix what failed.")
     found = hook_skip(sub, args) if sub in HOOK_VALUE_OPTS else None
     if found and found[1] == "n":
-        return block("B2", f"`git commit {found[0]}` შეიცავს -n-ს (= --no-verify) — აკრძალულია.")
+        return block("B2", f"`git commit {found[0]}` contains -n (= --no-verify) — forbidden.")
     if found:
         return hidden_block("B3" if sub == "push" else "B2", found[0])
     if sub == "push":
         for t in args:
             if t in ("-f", "--force", "--force-with-lease", "--force-if-includes") or t.startswith("--force") \
                     or re.fullmatch(r"-[A-Za-z]*f[A-Za-z]*", t) or t.startswith("+"):
-                return block("B3", "force push აკრძალულია (-f / --force / +refspec) — ისტორია არ გადაიწერება.")
+                return block("B3", "force push is forbidden (-f / --force / +refspec) — history is never rewritten.")
     if sub == "config" and any(a.lower() in ("core.hookspath", "core") for a in args):
         if any(a in ("--unset", "--unset-all", "--remove-section", "--rename-section") for a in args):
-            return block("B2", "core.hooksPath-ის წაშლა კარიბჭეებს თიშავს (git `.git/hooks`-ს დაუბრუნდება) — აკრძალულია.")
+            return block("B2", "removing core.hooksPath switches off the gates (git falls back to `.git/hooks`) — forbidden.")
         vals = [a for a in args if not a.startswith("-") and a.lower() not in ("core.hookspath", "core")]
         if vals and vals[-1].rstrip("/") != ".githooks":
-            return block("B2", "core.hooksPath უნდა დარჩეს `.githooks` — სხვა მნიშვნელობა თიშავს კარიბჭეებს.")
+            return block("B2", "core.hooksPath must stay `.githooks` — any other value switches off the gates.")
     return 0
 
 
@@ -1140,8 +1140,8 @@ def check_secret_read(seg: list[str], word: str, start: int, extra: str = "") ->
     # `echo "$(cat .env)"` runs cat: a redirect or a command/process substitution makes any command unsafe.
     if word in SECRET_SAFE_CMDS and not any(m in t for t in seg for m in (">", "<", "$(", "`")):
         return 0
-    return block("B4", "ბრძანება საიდუმლოების ფაილს (.env, *.pem, *.key, secrets/ …) კითხულობს ან git-ში ამატებს — "
-                       "აგენტს ეს ეკრძალება. საჭირო ცვლადის სახელი `.env.example`-შია; მნიშვნელობა მხოლოდ მფლობელმა იცის.")
+    return block("B4", "the command reads a secrets file (.env, *.pem, *.key, secrets/ …) or adds it to git — "
+                       "the agent may not. The needed variable's name is in `.env.example`; only the owner knows the value.")
 
 
 def check_secret_store(seg: list[str], word: str, start: int) -> int:
@@ -1159,9 +1159,9 @@ def check_secret_store(seg: list[str], word: str, start: int) -> int:
         or (word == "secret-tool" and "lookup" in args)
     if not reads:
         return 0
-    return block("B4", "ბრძანება სისტემის საიდუმლოების საცავიდან (macOS Keychain, Linux Secret Service) პაროლს ან "
-                       "გასაღებს კითხულობს — აგენტს ეს ეკრძალება. საჭიროების შემთხვევაში მფლობელმა გასაღები `.env`-ში "
-                       "თავად ჩაწეროს.")
+    return block("B4", "the command reads a password or key from the system's secret store (macOS Keychain, Linux Secret Service) "
+                       "— the agent may not. If it is needed, the owner writes the key into `.env` "
+                       "themselves.")
 
 
 def secret_name(name: str) -> bool:
@@ -1240,9 +1240,9 @@ def check_env_exposure(seg: list[str], word: str, start: int, extra: str = "") -
 
 
 def env_block(what: str) -> int:
-    return block("S1", f"ბრძანება ({what}) გარემოს ცვლადებს ბეჭდავს ან საიდუმლო ცვლადს შლის — იქ API გასაღებები "
-                       "ინახება. აგენტი საიდუმლოს მნიშვნელობას არასდროს ხედავს: პროგრამამ ის თავად წაიკითხოს გარემოდან. "
-                       "თუ მხოლოდ ის გინდა გაიგო, დაყენებულია თუ არა: `test -n \"$NAME\" && echo set`.")
+    return block("S1", f"the command ({what}) prints environment variables or expands a secret variable — API keys live "
+                       "there. The agent never sees a secret's value: the program reads it from the environment itself. "
+                       "To learn only whether it is set: `test -n \"$NAME\" && echo set`.")
 
 
 def git_index(seg: list[str], word: str, start: int) -> int | None:
@@ -1337,18 +1337,18 @@ def shell_behind(seg: list[str], word: str, start: int) -> int | None:
     return None
 
 
-OWNER_ONLY = ("`approve.py` / `approvals.md` მხოლოდ მფლობელის ხელშია: approve.py-ს გაშვება/შეცვლა და ledger-ში ჩაწერა "
-              "აგენტს არ შეუძლია. სთხოვე მფლობელს `/approve …`.")
+OWNER_ONLY = ("`approve.py` / `approvals.md` are the owner's alone: the agent cannot run or change approve.py or write "
+              "the ledger. Ask the owner for `/approve …`.")
 PROTECTED_NAMES = (
     ("approve.py", "B1", OWNER_ONLY),
     ("tools.approve", "B1", OWNER_ONLY),  # `-m tools.approve` reaches the same script (review S5)
     ("approvals.md", "B1", OWNER_ONLY),
-    (Path(ENGINE_PYTHON_NOTE).name, "B2", f"`{ENGINE_PYTHON_NOTE}`-ს მხოლოდ `.claude/hooks/py.sh` წერს (ნაპოვნი Python-ის გზა): სხვა "
-                            "პროგრამაზე მითითება ყველა hook-სა და კარიბჭეს Python-ის ნაცვლად იმ პროგრამით გაუშვებდა — "
-                            "აკრძალულია."),
-    (GIT_CONFIG_IN_CMD_RE, "B2", "`.git/config`-ში core.hooksPath და include ინახება: shell-ით ჩაწერილი ხაზი commit-ის "
-                                 "შემოწმებებს თიშავს — აკრძალულია. პარამეტრი `git config`-ით შეცვალე, ის ჯერ მფლობელს "
-                                 "ეკითხება."),
+    (Path(ENGINE_PYTHON_NOTE).name, "B2", f"only `.claude/hooks/py.sh` writes `{ENGINE_PYTHON_NOTE}` (the path of the Python it found): pointing it at "
+                            "another program would run every hook and gate with that program instead of Python — "
+                            "forbidden."),
+    (GIT_CONFIG_IN_CMD_RE, "B2", "`.git/config` holds core.hooksPath and include: a line written by the shell switches off the commit "
+                                 "checks — forbidden. Change the setting with `git config`; that asks the owner "
+                                 "first."),
 )
 
 
@@ -1394,8 +1394,8 @@ def writes_protected(seg: list[str], word: str, start: int, extra: str = "") -> 
             return block(code, why)
     made_up = [t for t in seg if MADE_UP_IN_MEMORY_RE.search(t)]
     if made_up and (set(made_up) & set(redirect_targets(seg)) or not read_only_command(seg, word, start)):
-        return block("B1", f"`{made_up[0]}` — memory/-ში ფაილის სახელს shell-ი ქმნის ($…, `…`, glob), და guard ვერ ხედავს, "
-                           "დამტკიცებების ჟურნალი ხომ არ არის — აკრძალულია. ფაილის სახელი პირდაპირ ჩაწერე.")
+        return block("B1", f"`{made_up[0]}` — the shell makes up a file name in memory/ ($…, `…`, glob), and the guard cannot see "
+                           "whether it is the approval ledger — forbidden. Write the file name literally.")
     return 0
 
 
@@ -1439,16 +1439,16 @@ def check_shell(cmd: str, depth: int = 0, ps: bool = False) -> int:
             return rc
     if depth >= MAX_NESTING:  # too deep to keep parsing: if anything still nests, fail closed (review S7)
         if substitutions(cmd) or stdin_programs(cmd) or any(nested_command(s, *first_word(s)) for s in segments(cmd)):
-            return block("B2", "ბრძანება ძალიან ღრმად არის ჩალაგებული (eval / ჩადგმული shell / $(…)) — guard "
-                               "ბოლომდე ვერ კითხულობს, ამიტომ აკრძალულია. ჩაალაგე უფრო მარტივად.")
+            return block("B2", "the command is nested too deeply (eval / nested shell / $(…)) — the guard "
+                               "cannot read it to the end, so it is forbidden. Nest it more simply.")
     fed = stdin_programs(cmd) if depth < MAX_NESTING else None
     for text in fed or []:
         rc = check_shell(text, depth + 1)
         if rc:
             return rc
     if fed is not None and (HOOK_SKIP_RE.search(cmd) or HOOK_SKIP_RE.search(unescaped(cmd))):
-        return block("B2", "ბრძანება stdin-ით shell-ს აწვდის ტექსტს, რომელიც ჰუკებს გამოტოვებს (-n / --no-verify) — "
-                           "აკრძალულია.")
+        return block("B2", "the command feeds a shell text on stdin that skips the hooks (-n / --no-verify) — "
+                           "forbidden.")
     if fed is None:  # a `cat <<EOF` body is text — unless it is piped into a shell, which runs it
         cmd, bodies = heredocs(cmd)
         rc = check_heredoc_bodies(bodies, depth)
@@ -1479,8 +1479,8 @@ def check_shell(cmd: str, depth: int = 0, ps: bool = False) -> int:
             if rc:
                 return rc
         elif start < len(seg) and HIDDEN_WORD_RE.search(seg[start]) and any(h in seg for h in HOOK_SUBCMDS):
-            return block("B2", "ბრძანების სიტყვას shell-ი ქმნის ($…, `…`) და მას ჰუკ-გამშვები ქვებრძანება "
-                               "(commit, push…) მოსდევს — git შეიძლება იმალებოდეს; აკრძალულია. პირდაპირ ჩაწერე.")
+            return block("B2", "the shell makes up the command word ($…, `…`) and a hook-running subcommand "
+                               "(commit, push…) follows it — git may be hiding there; forbidden. Write it literally.")
         extra = subtext if (subtext and UNQUOTED_SUB in " ".join(seg)) else ""
         rc = (check_secret_read(seg, word, start, extra) or check_secret_store(seg, word, start)
               or check_env_exposure(seg, word, start, extra) or writes_protected(seg, word, start, extra))
@@ -1492,9 +1492,9 @@ def check_shell(cmd: str, depth: int = 0, ps: bool = False) -> int:
     for lowered in {cmd.lower(), unescaped(cmd).lower()}:
         if "git" in lowered and ("--no-veri" in lowered or ("git_config" in lowered and (
                 "hookspath" in lowered or "include" in lowered or "$" in lowered or "`" in lowered))):
-            return block("B2", "`--no-verify`, core.hooksPath-ის გადაფარვა, კონფიგურაციის ჩართვა (include) ან "
-                               "GIT_CONFIG_* ცვლადი, რომლის მნიშვნელობასაც shell-ი ქმნის, აკრძალულია — კარიბჭეები "
-                               "არ გამოიტოვება.")
+            return block("B2", "`--no-verify`, overriding core.hooksPath, including configuration (include) or a "
+                               "GIT_CONFIG_* variable whose value the shell makes up are forbidden — the gates "
+                               "are never skipped.")
     return 0
 
 
@@ -1510,9 +1510,9 @@ def main() -> int:
             raise ValueError("the payload is not a JSON object")
     except ValueError as e:
         log(f"UNPARSEABLE payload — call blocked ({e}): {raw[:200]!r}")
-        print("GUARD[X1]: guard-მა ბრძანების აღწერა ვერ წაიკითხა (JSON დაზიანებულია) და გამოძახება გააჩერა. ეს ძრავის "
-              "შეცდომაა, არა შენი: ადამიანს უთხარი, ტერმინალი თავიდან გახსნას; თუ მეორდება — `.claude/hooks/guard.py` "
-              "ხელით უნდა შემოწმდეს.", file=sys.stderr)
+        print("GUARD[X1]: the guard could not read the call's description (broken JSON) and stopped the call. This is the "
+              "engine's fault, not yours: tell the person to reopen the terminal; if it happens again — `.claude/hooks/guard.py` "
+              "must be checked by hand.", file=sys.stderr)
         return 2
     tool = payload.get("tool_name") or ""
     ti = payload.get("tool_input") or {}
@@ -1523,8 +1523,8 @@ def main() -> int:
         if tool in SHELL_TOOLS:
             return check_shell(str(ti.get("command") or ""), ps=tool == "PowerShell")
     except Exception as e:  # a crash is visible and blocks the call — never a silent pass (ADR-0014)
-        print(f"GUARD[X2]: guard-ი ავარიულად გაჩერდა ({type(e).__name__}: {e}) და გამოძახება გააჩერა. ეს ძრავის შეცდომაა, "
-              "არა შენი: ადამიანს უთხარი — `.claude/hooks/guard.py` ხელით უნდა გასწორდეს, ან hook-ი დროებით გაითიშოს.",
+        print(f"GUARD[X2]: the guard crashed ({type(e).__name__}: {e}) and stopped the call. This is the engine's fault, "
+              "not yours: tell the person — `.claude/hooks/guard.py` must be fixed by hand, or the hook switched off for now.",
               file=sys.stderr)
         log(f"ERROR {type(e).__name__}: {e} on {tool} — call blocked")
         return 2
