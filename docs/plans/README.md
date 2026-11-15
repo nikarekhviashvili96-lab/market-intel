@@ -14,4 +14,4 @@ title: ფუნქციების გეგმები — ინდექ�
 
 | გეგმა | სათაური | სპეციფიკაცია | სტატუსი |
 |---|---|---|---|
-| — | ჯერ არცერთი | — | — |
+| [[PLAN-0001-foundation-walking-skeleton]] | Foundation and walking skeleton — build plan for SPEC-0001 | [[SPEC-0001-foundation-walking-skeleton]] | draft |
