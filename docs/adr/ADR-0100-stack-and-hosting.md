@@ -2,7 +2,7 @@
 id: ADR-0100
 type: adr
 title: Stack and hosting — Next.js + Tailwind on Vercel, Supabase, Python daily job on GitHub Actions
-status: proposed
+status: accepted
 date: 2026-11-15
 deciders: owner (`/approve`); proposed by Claude Opus 5.5
 related:
