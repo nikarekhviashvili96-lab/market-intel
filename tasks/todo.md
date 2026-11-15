@@ -25,20 +25,23 @@ related:
 <!-- auto: todo-now:start -->
 ## ახლა
 
-- ეტაპი 2/6 — სპეციფიკაცია: intent დამტკიცებულია; შემდეგი სესია იწყებს `/spec`-ს.
+- Stage 4/6 — build PLAN-0001, one branch and PR per task, each merged before the next.
 
 ## შემდეგი
 
-- [ ] D-003 — intent §5-ის 8 ღია საკითხი: გადაწყვეტა ან გადამოწმება; ფაქტები `docs/domain/`-ში თარიღითა და წყაროთი (მფლობელი, 2026-11-14) — verify: თითო საკითხს spec-ში ან `docs/domain/`-ში აქვს პასუხი
-- [ ] D-004 — `/spec` → SPEC-0001 v1 სერიების რეესტრით და G1–G4, G6–G9-ის კრიტერიუმებით, spec-reviewer-ით (intent accepted, 2026-11-14) — verify: `context_graph.py stage` → ეტაპი 2/6 · დამტკიცების მოლოდინში
+- [ ] D-007 — PLAN-0001 T1 on `feat/t1-python-foundation` from updated `main` (PLAN-0001 T1) — verify: `gate.py` exits 0 with `lint` and `unit` on; T1 PR merged
+- [ ] D-008 — PLAN-0001 T2–T9, one PR each (PLAN-0001) — verify: every box in PLAN-0001 ticked; verifier `VERDICT: pass`
 <!-- auto: todo-now:end -->
 
 ## შენ გელოდება
 
-- [ ] D-005 — PR `feat/intent`: `gates` მწვანე ✓ და მხოლოდ მერე merge (ruleset-ის პრაქტიკული შემოწმება) — verify: main-ში intent accepted
+- [ ] D-009 — push `chore/session-close-2026-11-15` and merge its PR (this session's memory) (owner, 2026-11-15) — verify: `main` holds EP-2026-11-15-519db0a3 closed
 - [ ] D-006 — Claude Code-ის გადატვირთვა: ქვედა ზოლზე „auto mode on" აღარ უნდა ჩანდეს; თუ ჩანს — `Shift+Tab` ან `claude --permission-mode default` — verify: ზოლზე default რეჟიმი
 
 ## დასრულებული
 
+- [x] D-003 — intent §5 items for SPEC-0001 decided or verified in the spec and `docs/domain/`; the rest moved to SPEC-0002 ✓ 2026-11-15 · 705f148
+- [x] D-004 — `/spec` → SPEC-0001, spec-reviewer two rounds, `/approve spec 0001` ✓ 2026-11-15 · 7700717
+- [x] D-005 — PR `feat/intent` merged after green `gates` (PR #3) ✓ 2026-11-15 · c83e57f
 - [x] D-001 — `/intent`: იდეა [[intent]]-ის §1-ში, ინტერვიუ, მშენებლის შემოწმება ✓ 2026-11-14 · 4856f3a
 - [x] D-002 — მფლობელის იდეა და `/approve intent` ✓ 2026-11-14 · მფლობელი
