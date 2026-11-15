@@ -78,7 +78,7 @@ switched on with these commands as argument lists, e.g. `["npm", "--prefix", "we
 - npm, in `web/`: `next`, `tailwindcss`, `recharts`, `@supabase/supabase-js`, `vitest`, `@playwright/test`,
   `supabase` (CLI, development dependency).
 
-**Needed but not on the approved list — the owner's yes is required before install:**
+**Also approved by the owner on 2026-11-15 (second list):**
 
 - Brought by the Next.js + Tailwind + TypeScript scaffold: `react`, `react-dom`, `typescript`, `@types/node`,
   `@types/react`, `@types/react-dom`, `@tailwindcss/postcss`, `eslint`, `eslint-config-next`.

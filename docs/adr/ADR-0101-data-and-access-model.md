@@ -10,6 +10,7 @@ related:
   - "[[SPEC-0001-foundation-walking-skeleton]]"
   - "[[ADR-0100-stack-and-hosting]]"
   - "[[fred]]"
+  - "[[supabase]]"
   - "[[supabase-free-plan]]"
   - "[[github]]"
 ---
@@ -59,8 +60,11 @@ choices are the hardest to undo once data exists, which is why they are a separa
 
 - **Database roles (Postgres):**
   - `ingest_writer` — a login role used only by the daily job: `INSERT` on `markets.observations` and
-    `core.job_runs`, `SELECT` on what it must compare against, nothing else. Its password lives only in GitHub
-    Secrets (`INGEST_DATABASE_URL`). The Supabase service-role key is not used by the job or the site.
+    `core.job_runs`, `SELECT` on what it must compare against, nothing else. It connects through Supabase's
+    **shared pooler (Supavisor) in session mode** — IPv4, port 5432, username `ingest_writer.[PROJECT-REF]`
+    ([[supabase]]). That is the primary and only path: on the Free plan a direct connection is IPv6-only, and
+    GitHub-hosted runners have no IPv6 ([[github]]). Its connection string and password live only in GitHub Secrets
+    (`INGEST_DATABASE_URL`). The Supabase service-role key is not used by the job or the site.
   - `ai_reader` — `SELECT` on every table and view, no `INSERT` / `UPDATE` / `DELETE` anywhere; no login until an AI
     feature exists (phase 5).
   - `anon` (not logged in) — no grants and no policies on any project table.
@@ -94,8 +98,9 @@ Supabase Auth's built-in rate limits stay on.
 
 ### Daily schedule and migrations
 
-- GitHub Actions runs the job daily at 02:00 UTC (06:00 Tbilisi), every day of the week, plus a manual run button;
-  schedules run in UTC and only on the default branch ([[github]]). Secrets: `FRED_API_KEY`, `INGEST_DATABASE_URL`.
+- GitHub Actions runs the job daily at 02:17 UTC (06:17 Tbilisi), cron `17 2 * * *`, every day of the week, plus a
+  manual run button. The minute is off the hour because scheduled runs can be delayed under heavy load, which is
+  worst at the top of the hour (owner, 2026-11-15). Schedules run in UTC and only on the default branch ([[github]]). Secrets: `FRED_API_KEY`, `INGEST_DATABASE_URL`.
 - A failed run exits non-zero, so GitHub marks it failed and emails the owner ([[github]]).
 - Migrations in `supabase/migrations/` are applied to the live project by a GitHub Actions workflow after a merge to
   `main`, with `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD` in GitHub Secrets — never from a laptop.
@@ -125,9 +130,9 @@ Supabase Auth's built-in rate limits stay on.
   monthly check by the owner.
 - − Supabase may pause the free project after a week of too little activity; daily writes count, but it is not
   guaranteed ([[supabase-free-plan]]).
-- − Not yet verified: whether the job can connect as `ingest_writer` through Supabase's connection pooler from
-  GitHub's runners (GitHub runners lack IPv6, and the direct connection may need it). The plan's first database task
-  checks this; if it fails, a superseding ADR chooses another write path.
+- − Supabase's docs say a custom role can log in through the shared pooler ([[supabase]]); it is not yet proven live
+  for this project. The plan's first database task is the live proof. If it fails, a superseding ADR chooses another
+  write path.
 
 ## Verification
 
@@ -135,4 +140,6 @@ Supabase Auth's built-in rate limits stay on.
   `ingest_writer` each try to read, insert, update and delete in every table; every result matches the table above.
 - A catalog test lists all tables in `core`, `markets` and `public` and fails on any without row-level security.
 - An append-only test: `UPDATE` and `DELETE` on `markets.observations` and `core.job_runs` fail for every role.
-- The first scheduled run on the live project leaves a `core.job_runs` row with result `success`.
+- Live proof, the plan's first database task: from a GitHub-hosted runner, `ingest_writer` connects through the
+  session pooler as `ingest_writer.[PROJECT-REF]`, inserts one row, and its update and delete attempts are refused.
+- The first scheduled run on the live project (02:17 UTC) leaves a `core.job_runs` row with result `success`.
