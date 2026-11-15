@@ -2,7 +2,7 @@
 id: PLAN-0001
 type: plan
 title: Foundation and walking skeleton — build plan for SPEC-0001
-status: draft
+status: approved
 created: 2026-11-15
 updated: 2026-11-15
 spec: "[[SPEC-0001-foundation-walking-skeleton]]"
