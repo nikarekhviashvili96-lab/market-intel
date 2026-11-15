@@ -69,8 +69,15 @@ as Sonnet at ~1/8 of the cost); Sonnet for long summaries, judgement and anythin
 carry their own `model:` line: Opus for the correctness and security lenses; Sonnet for the quality lens, the refuter
 and the spec reviewer; Haiku for the verifier, which only runs the gates and compares their lines with the claims.
 
+### Language (owner's decision, 2026-11-15 — overrides the Georgian rules below and in AGENTS.md)
+- Respond to the owner in English.
+- All new documents, commit messages and PR titles/descriptions are written in English.
+- Do not translate `intent.md`: it stays as the owner approved it. Existing Georgian files are not rewritten
+  just to change their language.
+- The language of text the product shows its users is a product decision (intent.md / the spec), not this rule.
+
 ### Talking to the owner
-Georgian, connected prose, simple words; gloss a technical term the first time (e.g. „gate (მანქანური
+English (see Language above), connected prose, simple words; gloss a technical term the first time (e.g. „gate (მანქანური
 შემოწმება)"). Show results, not promises; say plainly what was not verified.
 Georgian quality — the engine carries its own rule and never leans on anyone's global setup: correct cases
 (ბრუნვები) and subject–verb agreement; no calque from English („მოდი შევამოწმო" → „ერთი წამი, ვამოწმებ";
