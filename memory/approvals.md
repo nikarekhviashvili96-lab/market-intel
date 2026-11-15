@@ -12,3 +12,4 @@ status: living
 | როდის | id | ცვლილება | ფაილი | შენიშვნა |
 |---|---|---|---|---|
 | 2026-11-14 14:50 +0400 | intent | draft → accepted | intent.md | — |
+| 2026-11-15 11:14 +0400 | intent | draft → accepted | intent.md | — |
