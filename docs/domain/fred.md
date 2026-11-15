@@ -60,9 +60,25 @@ Checked 2026-11-15 on the official pages, at the owner's request.
   policy page was not found (the URL tried returned 404). A different Treasury site, Fiscal Data
   (<https://fiscaldata.treasury.gov/about-us/>), allows commercial and non-commercial reuse, but that is a different
   dataset and is only a secondary indication.
-- **Sharing flag: still "not shareable".** The Board's terms allow redistribution with credit to the Board; the
-  series is credited to the U.S. Treasury, whose terms are not yet confirmed. Flipping the flag is the owner's
-  decision.
+- The Board's terms allow redistribution with credit to the Board; the series is credited to the U.S. Treasury,
+  whose own site terms were not found on 2026-11-15.
+
+## Sharing decision for DGS10 — shareable
+
+**Owner's decision, 2026-11-15:** `DGS10` is flagged **shareable** with invited viewers. Rationale, as the owner
+gave it (source: owner — the legal reading is the owner's, not verified by the agent):
+
+- U.S. Treasury data is a work of the U.S. federal government and is not subject to copyright under
+  17 U.S.C. §105.
+- The Federal Reserve Board's terms allow copying and distribution with citation (above).
+- Use is non-commercial, with at most 5 invited viewers ([[vercel-hobby]]).
+
+Required on the chart (owner, 2026-11-15):
+
+- Credit line: "Source: U.S. Treasury via Federal Reserve H.15; retrieved from FRED, Federal Reserve Bank of
+  St. Louis".
+- FRED's API notice: "This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank
+  of St. Louis.", a link to FRED's Terms of Use, and the statement that using the site means accepting them.
 
 ## API: observations
 
