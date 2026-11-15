@@ -25,20 +25,28 @@ related:
 <!-- auto: todo-now:start -->
 ## ახლა
 
-- Stage 4/6 — build PLAN-0001, one branch and PR per task, each merged before the next.
+- Stage 4/6 — build PLAN-0001 in batches (B1, B2a, B2b, B3, B4 — PLAN-0001 deviations), one branch and PR per batch, each merged before the next.
 
 ## შემდეგი
 
-- [ ] D-007 — PLAN-0001 T1 on `feat/t1-python-foundation` from updated `main` (PLAN-0001 T1) — verify: `gate.py` exits 0 with `lint` and `unit` on; T1 PR merged
-- [ ] D-008 — PLAN-0001 T2–T9, one PR each (PLAN-0001) — verify: every box in PLAN-0001 ticked; verifier `VERDICT: pass`
+- [ ] D-008 — B1 = PLAN-0001 T2 (PLAN-0001 deviations) — verify: T2's verify line; PR merged after green `gates`
+- [ ] D-010 — B2a = PLAN-0001 T3 alone, after the owner's B2 checklist (D-015) (PLAN-0001 deviations) — verify: T3's verify line; PR merged
+- [ ] D-011 — B2b = PLAN-0001 T4 + T5 (PLAN-0001 deviations) — verify: T4's and T5's verify lines; PR merged
+- [ ] D-012 — B3 = PLAN-0001 T6 + T7 + T8 (PLAN-0001 deviations) — verify: their verify lines; PR merged
+- [ ] D-013 — B4 = PLAN-0001 T9 (PLAN-0001 deviations) — verify: T9's verify line; verifier `VERDICT: pass`
 <!-- auto: todo-now:end -->
 
 ## შენ გელოდება
+
+- [ ] D-014 — `gh auth login` in the browser (P-010, the owner's step) — verify: `gh auth status` shows the account
+- [ ] D-015 — the B2 checklist: Supabase project, sign-up off and 12-character passwords, `ingest_writer` login, access token, new FRED key and the old one revoked, four GitHub secrets, the project ref told to the agent (owner, 2026-11-15) — verify: the agent sees the four secret names in `gh secret list`
 
 - [ ] D-009 — push `chore/session-close-2026-11-15` and merge its PR (this session's memory) (owner, 2026-11-15) — verify: `main` holds EP-2026-11-15-519db0a3 closed
 - [ ] D-006 — Claude Code-ის გადატვირთვა: ქვედა ზოლზე „auto mode on" აღარ უნდა ჩანდეს; თუ ჩანს — `Shift+Tab` ან `claude --permission-mode default` — verify: ზოლზე default რეჟიმი
 
 ## დასრულებული
+
+- [x] D-007 — PLAN-0001 T1 on `feat/t1-python-foundation` (PLAN-0001 T1) — PR #8 merged ✓ 2026-11-15 · 86d0e36
 
 - [x] D-003 — intent §5 items for SPEC-0001 decided or verified in the spec and `docs/domain/`; the rest moved to SPEC-0002 ✓ 2026-11-15 · 705f148
 - [x] D-004 — `/spec` → SPEC-0001, spec-reviewer two rounds, `/approve spec 0001` ✓ 2026-11-15 · 7700717

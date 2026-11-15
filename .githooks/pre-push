@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Pre-push gate (owner, 2026-11-15): runs the gates marked pre_push in tools/gates/gates.toml — the drill, which proves
+# every check can still fail — when the pushed commits touch an engine file. Commits stay fast (.githooks/pre-commit
+# runs the quick gates and holds the drill's floor); CI runs every gate and the drill on every system and is the
+# required check of main. Any FAIL or INCONCLUSIVE stops the push.
+# Bypassing it (--no-verify, core.hooksPath override) is denied by the project's settings and by the guard. Fix what
+# failed instead.
+set -u
+ROOT="$(git rev-parse --show-toplevel)" || exit 1
+cd "$ROOT" || exit 1
+bash "$ROOT/.claude/hooks/py.sh" tools/gates/gate.py --pre-push --quiet
+rc=$?
+if [ "$rc" -ne 0 ]; then
+  echo "pre-push: gates did not pass (exit $rc) — push stopped. Details: bash .claude/hooks/py.sh tools/gates/gate.py --only drill" >&2
+  exit 1
+fi
+exit 0

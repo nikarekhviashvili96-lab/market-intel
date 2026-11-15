@@ -5,8 +5,8 @@
 `floor` of the drill gate in tools/gates/gates.toml. The drill gate (gate.py) fails when the drill holds fewer cases
 than the floor (a case was removed, or a group stopped running) and when it holds more (the floor rises with the drill,
 in the same commit); a floor below the last commit's needs the owner's own `/approve floor N` row in
-memory/approvals.md, written since that commit (LEDGER). A drill gate switched off, kept from the commit or removed arms
-no case, so it lowers the floor to 0; once the owner's switch is committed, the floor written on that gate is what is
+memory/approvals.md, written since that commit (LEDGER). A drill gate switched off, run at neither commit nor push, or
+removed arms no case, so it lowers the floor to 0; once the owner's switch is committed, the floor written on that gate is what is
 held, at commit (gate.py) as in G7. The guard's G7 refuses an edit that lowers, removes or switches off
 the floor.
 A case is ARMED here or ELSEWHERE — a case only another system can run (Windows' admin shares, macOS and Linux file
@@ -60,17 +60,22 @@ def floor_in(text: str | None) -> int | None:
     return floor_of(drill_gate(text))
 
 
-def runs_at_commit(gate: dict | None) -> bool:
-    """A drill gate that is switched on and runs at commit, read as gate.py reads it — one that does not arms no case."""
-    return bool(gate and gate.get("enabled") and gate.get("pre_commit"))
+def armed(gate: dict | None) -> bool:
+    """A drill gate that is switched on and runs at a git hook — at commit (`pre_commit`) or at push (`pre_push`, owner
+    2026-11-15: the drill moved to push, CI still runs it on every system) —, read as gate.py reads it. One that runs at
+    neither arms no case."""
+    return bool(gate and gate.get("enabled") and (gate.get("pre_commit") or gate.get("pre_push")))
+
+
+runs_at_commit = armed  # the name other engine files import (tools/approve.py, the owner's file)
 
 
 def held_in(text: str | None) -> int | None:
-    """The floor a gates.toml text holds the drill to at commit: its floor, 0 when the drill gate is switched off or kept
-    from the commit, None when there is no drill gate or it has no floor."""
+    """The floor a gates.toml text holds the drill to: its floor, 0 when the drill gate is switched off or runs at
+    neither commit nor push, None when there is no drill gate or it has no floor."""
     gate = drill_gate(text)
     floor = floor_of(gate)
-    return None if floor is None else floor if runs_at_commit(gate) else 0
+    return None if floor is None else floor if armed(gate) else 0
 
 
 def cases_in(line: str) -> int | None:

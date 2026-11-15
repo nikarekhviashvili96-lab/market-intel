@@ -4,6 +4,8 @@
 
   bash .claude/hooks/py.sh tools/gates/gate.py                  every enabled gate, whole project
   bash .claude/hooks/py.sh tools/gates/gate.py --pre-commit     gates marked pre_commit, on what the commit records
+  bash .claude/hooks/py.sh tools/gates/gate.py --pre-push       gates marked pre_push (the drill), on the pushed commits
+                                                                — git's pre-push lines on stdin
   bash .claude/hooks/py.sh tools/gates/gate.py --files F [F…]   gates marked stop, restricted to these files
   bash .claude/hooks/py.sh tools/gates/gate.py --only graph,json
   bash .claude/hooks/py.sh tools/gates/gate.py --list
@@ -19,6 +21,10 @@ copy's code (a `cmd` gate, the drill) is INCONCLUSIVE when a staged file changed
 own table (its floor, on or off) is the staged gates.toml's too, unless drill.py on disk is not what the commit
 records: then the drill counts the disk's cases and is held to the disk's floor. Known limit: a file changed on disk but
 not staged at all still reaches a `cmd` gate or the drill as it is on disk.
+The drill runs at push (owner, 2026-11-15: commits stay fast; CI runs every gate and the drill on every system and is the
+required check). At commit a push-only drill gate only has its floor checked against the last commit's (LEDGER); at
+push it runs when the pushed commits touch an engine file, on the checked-out tree — so it refuses a push of another
+commit than HEAD (DRILL-NOT-HEAD) and engine files changed but not committed (DRILL-UNCOMMITTED).
 """
 from __future__ import annotations
 
@@ -538,22 +544,24 @@ def floor_verdict(last: str, floor: int) -> str:
     return ""
 
 
-def drill_switched_off(root: Path, gates: list[dict], pre_commit: bool) -> Result | None:
-    """ADR-0015: a drill gate switched off, removed, or kept from the commit (pre_commit = false) arms no case — its floor
-    is 0, which needs the owner's row like any other lowering. When the last commit's drill gate already did not
-    run at commit (the owner switched it off with their row), the floor written on it is what is held — written
-    against written, as in the guard's G7 —, so a later commit no longer needs that row again, while lowering
-    the written floor or taking the gate out still does. None when the drill runs, or that row is there."""
+def drill_switched_off(root: Path, gates: list[dict], pre_commit: bool, at_hook: bool | None = None) -> Result | None:
+    """ADR-0015: a drill gate switched off, removed, or run at neither commit nor push (pre_commit and pre_push false)
+    arms no case — its floor is 0, which needs the owner's row like any other lowering. When the last commit's drill
+    gate already ran at neither (the owner switched it off with their row), the floor written on it is what is held —
+    written against written, as in the guard's G7 —, so a later commit no longer needs that row again, while lowering
+    the written floor or taking the gate out still does. None when the drill runs, or that row is there. `at_hook`: a
+    commit or push check (default: pre_commit)."""
+    hook = pre_commit if at_hook is None else at_hook
     drill = next((g for g in gates if drill_floor.is_drill(g)), None)
-    if drill is not None and drill.get("enabled") and (drill.get("pre_commit") or not pre_commit):
+    if drill is not None and drill.get("enabled") and (drill_floor.armed(drill) or not hook):
         return None
     head = drill_floor.drill_gate(git_show(root, f"HEAD:{drill_floor.GATES}"))
-    standing = None if head is None or drill_floor.runs_at_commit(head) else drill_floor.floor_of(drill)
+    standing = None if head is None or drill_floor.armed(head) else drill_floor.floor_of(drill)
     lowered = floor_lowered(root, 0 if standing is None else standing, pre_commit)
     if not lowered:
         return None
     how = ("is gone from gates.toml" if drill is None else "is switched off" if not drill.get("enabled")
-           else "no longer runs at commit (pre_commit = false)")
+           else "no longer runs at commit or at push (pre_commit and pre_push are false)")
     if standing is not None:
         return Result("drill", "FAIL", f"the drill gate {how} and the floor written on it went down — once the owner "
                       "has switched the drill off, that floor is what is held: put it back", [lowered])
@@ -579,7 +587,75 @@ def drill_not_staged(root: Path) -> str:
             "it, wait until that session commits (L-007)")
 
 
-def gate_drill(root: Path, files: list[Path], pre_commit: bool = False, gate: dict | None = None, **_) -> Result:
+ZERO_SHA_RE = re.compile(r"^0+$")
+PUSH_LINES: list[str] = []  # git's pre-push lines (<local ref> <local sha> <remote ref> <remote sha>), read in main()
+
+
+def push_blocker(root: Path, lines: list[str]) -> Result | None:
+    """At push: None when the drill must run on the checked-out tree; otherwise the Result that replaces it — SKIP when
+    no pushed commit touches an engine file, INCONCLUSIVE when the checked-out tree is not what is pushed (another
+    commit than HEAD, engine files changed but not committed) or git could not tell."""
+    head = subprocess.run(["git", "-C", str(root), "rev-parse", "--verify", "-q", "HEAD"], capture_output=True,
+                          text=True).stdout.strip()
+    touched, other = [], []
+    for line in lines:
+        parts = line.split()
+        if len(parts) != 4 or ZERO_SHA_RE.match(parts[1]):  # a deleted branch pushes no code
+            continue
+        local, remote = parts[1], parts[3]
+        span = [local, "--not", "--remotes"] if ZERO_SHA_RE.match(remote) else [f"{remote}..{local}"]
+        r = subprocess.run(["git", "-C", str(root), "log", "--name-only", "--format=", *span], capture_output=True,
+                           text=True, encoding="utf-8", errors="replace")
+        if r.returncode != 0:
+            return Result("drill", "INCONCLUSIVE", f"git could not list the commits pushed to {parts[2]} — the drill was "
+                          "not run (fetch first: the remote's commit may be unknown here)")
+        engine = [f for f in r.stdout.split() if f.startswith(HARNESS_PREFIXES)]
+        touched += engine
+        if engine and local != head:
+            other.append(parts[0])
+    if not touched:
+        return Result("drill", "SKIP", "no pushed commit touches an engine file — the drill runs when one does (and on "
+                                       "every full `gate.py` run and in CI)")
+    if other:
+        return Result("drill", "INCONCLUSIVE", f"DRILL-NOT-HEAD: {', '.join(other)} is not the checked-out commit — the "
+                      "drill runs the checked-out tree, so it would prove another commit: check out the branch you "
+                      "push, then push again")
+    r = subprocess.run(["git", "-C", str(root), "status", "--porcelain", "--untracked-files=all"], capture_output=True,
+                       text=True, encoding="utf-8", errors="replace")
+    if r.returncode != 0:
+        return Result("drill", "INCONCLUSIVE", "git could not tell whether engine files changed after the last commit — "
+                      "the drill was not run")
+    dirty = [ln[3:].strip('"') for ln in r.stdout.splitlines() if ln[3:].strip('"').startswith(HARNESS_PREFIXES)]
+    if dirty:
+        return Result("drill", "INCONCLUSIVE", f"DRILL-UNCOMMITTED: {len(dirty)} engine file(s) changed but not committed "
+                      f"({', '.join(dirty[:3])}) — the drill would prove the disk, not the pushed commit: commit them "
+                      "(or, if another session is changing them, wait until it commits — L-007), then push again",
+                      dirty[:10])
+    return None
+
+
+def push_only(gate: dict | None) -> bool:
+    """A drill gate that runs at push and not at commit (owner, 2026-11-15)."""
+    return drill_floor.is_drill(gate) and not gate.get("pre_commit") and bool(gate.get("pre_push"))
+
+
+def gate_drill(root: Path, files: list[Path], pre_commit: bool = False, gate: dict | None = None,
+               pre_push: bool = False, **_) -> Result:
+    if pre_commit and push_only(gate):
+        # owner, 2026-11-15: the drill runs at push and in CI; at commit only its floor is held against the last commit
+        floor = drill_floor.floor_of(gate)
+        if floor is None:
+            return Result("drill", "INCONCLUSIVE", "the drill gate has no integer `floor` in gates.toml — the drill's "
+                          "floor is not held (ADR-0015)")
+        lowered = floor_lowered(root, floor, pre_commit)
+        if lowered:
+            return Result("drill", "FAIL", f"floor {floor:,} is below the last commit's", [lowered])
+        return Result("drill", "SKIP", f"runs at push and in CI, not at commit — here only its floor was checked: "
+                                       f"{floor:,}, not lowered")
+    if pre_push:
+        blocker = push_blocker(root, PUSH_LINES)
+        if blocker:
+            return blocker
     if pre_commit:
         staged = subprocess.run(["git", "-C", str(root), "diff", "--cached", "--name-only"], capture_output=True,
                                 text=True, encoding="utf-8", errors="replace").stdout.split()
@@ -611,8 +687,8 @@ def gate_drill(root: Path, files: list[Path], pre_commit: bool = False, gate: di
         tail = [off] + tail
     elif status == "PASS":
         last += f"  · floor {floor:,} held"
-        if pre_commit and not engine_line.write_receipt(root):  # the session-end line reads it (ADR-0015)
-            last += "  · no receipt written: the session-end line will call this commit unchecked"
+        if (pre_commit or pre_push) and not engine_line.write_receipt(root, "HEAD" if pre_push else None):
+            last += "  · no receipt written: the session-end line will call this commit unchecked"  # ADR-0015
     return Result("drill", status, last, tail + ([r.stderr.strip()[-300:]] if r.returncode not in (0, 1) else []),
                   notice="LEFT OUT" in last)
 
@@ -753,7 +829,7 @@ def ran_on_other_text(g: dict, later: list[str] | None) -> Result | None:
                   hit[:10])
 
 
-def run(root: Path, gates: list[dict], files: list[Path] | None, pre_commit: bool) -> list[Result]:
+def run(root: Path, gates: list[dict], files: list[Path] | None, pre_commit: bool, pre_push: bool = False) -> list[Result]:
     results = []
     all_files, source = (files, "given files") if files is not None else project_files(root)
     on = [g for g in gates if g.get("enabled")]
@@ -772,11 +848,13 @@ def run(root: Path, gates: list[dict], files: list[Path] | None, pre_commit: boo
                     label = STAGED_INPUT
                     res = (BUILTINS[builtin](staged, staged_files, pre_commit=True, gate=g, repo=root) if staged
                            else Result(g["id"], "INCONCLUSIVE", f"{why} — nothing the commit records was checked"))
-                elif at_commit and builtin in ("drill", None) and (other := ran_on_other_text(g, later)):
+                elif (at_commit and builtin in ("drill", None) and not push_only(g)
+                      and (other := ran_on_other_text(g, later))):  # a push-only drill runs nothing at commit
                     res = other
                 elif builtin:
                     fn = BUILTINS[builtin]
-                    res = fn(root, files if builtin == "graph" else all_files, pre_commit=pre_commit, gate=g)
+                    res = fn(root, files if builtin == "graph" else all_files, pre_commit=pre_commit, gate=g,
+                             pre_push=pre_push)
                 else:
                     res = run_cmd_gate(root, g)
             except Exception as e:
@@ -793,6 +871,7 @@ def run(root: Path, gates: list[dict], files: list[Path] | None, pre_commit: boo
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="deterministic gates")
     ap.add_argument("--pre-commit", action="store_true")
+    ap.add_argument("--pre-push", action="store_true", help="gates marked pre_push; git's pre-push lines on stdin")
     ap.add_argument("--files", nargs="+")
     ap.add_argument("--only", help="comma-separated gate ids")
     ap.add_argument("--list", action="store_true")
@@ -819,16 +898,21 @@ def main(argv: list[str] | None = None) -> int:
         gates = [g for g in gates if g["id"] in want]
     elif a.files:
         gates = [g for g in gates if g.get("stop") or not g.get("enabled")]
-    elif a.pre_commit:
-        gates = [g for g in gates if g.get("pre_commit")]
+    elif a.pre_commit:  # a push-only drill gate too: at commit its floor is held (gate_drill)
+        gates = [g for g in gates if g.get("pre_commit") or (drill_floor.is_drill(g) and g.get("pre_push"))]
+    elif a.pre_push:
+        gates = [g for g in gates if g.get("pre_push")]
+    if a.pre_push:
+        global PUSH_LINES
+        PUSH_LINES = [] if sys.stdin is None or sys.stdin.isatty() else sys.stdin.read().splitlines()
     files = [Path(f) if Path(f).is_absolute() else (Path.cwd() / f) for f in a.files] if a.files else None
     if files is not None:
         files = [f.resolve() for f in files if f.exists()]
-    results = run(root, gates, files, a.pre_commit)
+    results = run(root, gates, files, a.pre_commit, a.pre_push)
     if several:
         results.append(several)
     elif not a.files and (not want or "drill" in want):  # a run that holds the drill (ADR-0015)
-        off = drill_switched_off(root, every, a.pre_commit)
+        off = drill_switched_off(root, every, a.pre_commit, a.pre_commit or a.pre_push)
         results = [r for r in results if r.gate != "drill"] + [off] if off else results
     for r in results:
         if a.quiet and r.status in ("PASS", "SKIP") and not r.notice:

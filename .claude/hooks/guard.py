@@ -102,7 +102,7 @@ CODE_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(CODE_ROOT / "tools"))
 from budget import GATES as BUDGET_FILE, always_loaded, budget, budget_in, import_closure, kind as loaded_kind  # noqa: E402
 from context_graph import OWNER_STATUSES, PENDING_STATUSES, status_of, type_for_path  # noqa: E402
-from drill_floor import drill_gate, floor_in, floor_of, held_in, runs_at_commit  # noqa: E402
+from drill_floor import armed, drill_gate, floor_in, floor_of, held_in  # noqa: E402
 from redact import MARKER_RE  # noqa: E402
 
 EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
@@ -414,7 +414,7 @@ def check_budget(tool: str, ti: dict, root: Path, rel: str) -> int:
         # A drill gate switched off holds 0: it arms no case. One the owner has already switched off holds its written
         # floor, so an edit of another line of it is no lowering.
         drill0 = drill_gate(before)
-        f0, f1 = floor_of(drill0), held_in(after) if runs_at_commit(drill0) else floor_in(after)
+        f0, f1 = floor_of(drill0), held_in(after) if armed(drill0) else floor_in(after)
         if f0 is not None and (f1 is None or f1 < f0):  # ADR-0015: the floor rises with the drill, the owner lowers it
             return block("G7", f"{rel}: only the owner lowers, removes or switches off the drill floor ({f0:,} cases) "
                                "(a switched-off drill checks no case) — `/approve floor <N>`. Raising it is allowed "
