@@ -19,7 +19,7 @@ argument-hint: "[what changed, or the owner's new answers]"
    approval of the engine's own ADRs. Write the project's type into the frontmatter — `kind:` website / game /
    agent / automation / other (the table in `docs/guides/other.md` decides a mixed idea) — and take the
    interview's questions from that type's guide, `docs/guides/<kind>.md` §1.
-4. **Interview when information is missing** — ONE question per message (never two), in Georgian, with
+4. **Interview when information is missing** — ONE question per message (never two), in the owner's language (`CLAUDE.md` → Language), with
    2–3 concrete options and your recommendation. Once `kind` is set, the guide's §1 questions replace the
    template's list in §7: rewrite §7 as the guide's questions the idea has not answered yet, ask every one
    of them (none is skipped as obvious), and when one is answered, write the answer where it belongs and
@@ -49,5 +49,5 @@ argument-hint: "[what changed, or the owner's new answers]"
    **ჰიპოთეზა** (inferred — needs confirmation). Never present a hypothesis as the owner's words.
 6. **Version** — bump `version` (0.1 → 0.2), set `updated`, add one line to the history.
 7. **Check** — `bash .claude/hooks/py.sh tools/context_graph.py check intent.md`; fix every error.
-8. **Tell the owner** in 2–3 Georgian sentences what changed and what to review, and the next step from
+8. **Tell the owner** in 2–3 sentences in the owner's language (`CLAUDE.md` → Language) what changed and what to review, and the next step from
    `bash .claude/hooks/py.sh tools/context_graph.py stage`; the decision is `/approve intent`.

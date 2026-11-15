@@ -29,7 +29,7 @@ paths:
   often know which one it is. (4) Change one thing at a time. (5) The fix starts with a test that fails without it;
   prove it reaches the bug (break the code on purpose — it must go red). "It passed when I ran it again" finds no
   cause, and a quiet fallback hides one. After two failed fixes, stop and say so.
-- **Telling the person about a failure** — they cannot read an error text: say in plain Georgian what broke (what they
+- **Telling the person about a failure** — they cannot read an error text: say plainly, in the owner's language (`CLAUDE.md` → Language), what broke (what they
   would see), what you tried, what is known and what is not, and what you need from them (an answer, a screenshot,
   access). The raw error is evidence for you, never the explanation for them.
 - **Gates are the definition of done:** `bash .claude/hooks/py.sh tools/gates/gate.py` exit 0. Exit semantics everywhere:

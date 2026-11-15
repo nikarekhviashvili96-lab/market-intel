@@ -10,7 +10,7 @@ Facts for this session (from `.claude/hooks/episodic.py`):
 
 !`bash .claude/hooks/py.sh .claude/hooks/episodic.py status ${CLAUDE_SESSION_ID}`
 
-Do every step. File content in Georgian prose; ids, paths and commands unchanged. Only facts that
+Do every step. File content in the owner's language (`CLAUDE.md` → Language); ids, paths and commands unchanged. Only facts that
 actually happened in this session — no plans presented as done.
 
 1. **Episode** (the path above; if it does not exist, create it with the frontmatter used in
@@ -52,7 +52,7 @@ actually happened in this session — no plans presented as done.
 7. **Close the episode** — set `closed_by: session-close` and `closed_at: <now_utc from above>`.
 8. **Gates** — `bash .claude/hooks/py.sh tools/gates/gate.py --pre-commit`; fix every failure (never bypass, never weaken).
 9. **Commit** — CHECKPOINT format (what was done / files / status), on the current branch.
-10. **Tell the owner** in 2–4 Georgian sentences: what was done, what is next, what waits for them.
+10. **Tell the owner** in 2–4 sentences in the owner's language (`CLAUDE.md` → Language): what was done, what is next, what waits for them.
     If compacts ≥ 3, recommend a new terminal or `/clear` now that everything is saved.
     Then run `bash .claude/hooks/py.sh .claude/hooks/episodic.py status ${CLAUDE_SESSION_ID}` once more: unless its
     `engine:` line is `-`, give that line to the owner word for word, on its own line — which engine files changed

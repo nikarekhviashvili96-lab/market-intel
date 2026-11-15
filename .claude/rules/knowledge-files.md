@@ -9,7 +9,7 @@ paths:
 
 # Knowledge files — conventions (enforced by the `graph` gate and the guard)
 
-- **Language:** Georgian prose; ids, file names, paths, commands and code in English.
+- **Language:** prose in the owner's language (`CLAUDE.md` → Language) — an existing file keeps its language; ids, file names, paths, commands and code in English.
 - **Frontmatter** (YAML subset: `key: value`, quoted strings, `[a, b]`, `- item` lists) is required by
   location: `intent.md` → intent · `plan.md` → roadmap · `progress.md` → progress ·
   `docs/specs/SPEC-*` → spec · `docs/plans/PLAN-*` → plan · `docs/adr/ADR-*` → adr ·
