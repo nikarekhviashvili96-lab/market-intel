@@ -10,7 +10,7 @@ Python 3.12+ and gitleaks; a project inside another repository, or a core.hooksP
 reported and left alone. Install hints name Windows, macOS and Linux. It also says once where Claude Code's sandbox
 stands (ADR-0014; read by tools/sandbox_state.py: none on native Windows — WSL2 has it; off until the person switches it
 on) — it never switches the sandbox on.
-Silent when everything is in place; otherwise one short Georgian note for the agent: what was done and what is
+Silent when everything is in place; otherwise one short note for the agent: what was done and what is
 missing. It never touches the global git config (L-005), never installs anything (installing a tool is the person's
 yes) and never fails the session — it always exits 0. Missing tools are reported once per repository (a marker
 inside .git/); commit checks that are not running are reported at every session start, and with no repository of its
@@ -41,12 +41,12 @@ sys.path.insert(0, str(HERE.parents[2] / "tools" / "gates"))
 sys.path.insert(0, str(HERE.parents[2] / "tools"))
 MARKER = "engine-firstrun"  # inside .git/: the notes about missing tools that were already given
 INSTALL = {  # what to offer the person, per system; installing is always their yes. py.sh repeats "python": change both
-    "git": "Windows: `winget install Git.Git`; macOS: `xcode-select --install` ან `brew install git`; "
+    "git": "Windows: `winget install Git.Git`; macOS: `xcode-select --install` or `brew install git`; "
            "Linux: `sudo apt install git`",
     "python": "Windows: `winget install Python.Python.3.12`; macOS: `brew install python@3.12`; "
-              "Linux: `sudo apt install python3.12` (Ubuntu 24.04+), სხვაგან `uv python install 3.12`",
+              "Linux: `sudo apt install python3.12` (Ubuntu 24.04+), elsewhere `uv python install 3.12`",
     "gitleaks": "Windows: `winget install Gitleaks.Gitleaks`; macOS: `brew install gitleaks`; "
-                "Linux: `sudo apt install gitleaks` ან GitHub-ის release",
+                "Linux: `sudo apt install gitleaks` or GitHub's release",
 }
 
 
@@ -74,15 +74,15 @@ def gitleaks_note() -> str | None:
     try:
         from gate import find_gitleaks  # the same search the secrets gate makes
     except Exception as e:  # e.g. a Python without tomllib — say so, never guess
-        return f"gitleaks-ის შემოწმება ვერ გაეშვა ({type(e).__name__}: {e})"
+        return f"the gitleaks check could not run ({type(e).__name__}: {e})"
     if find_gitleaks():
         return None
     explicit = os.environ.get("GITLEAKS_BIN")
     if explicit:  # the gate treats a named but missing gitleaks as INCONCLUSIVE, not as "not installed"
-        return (f"`GITLEAKS_BIN` ფაილზე მიუთითებს, რომელიც არ არსებობს ({explicit}) — საიდუმლოების შემოწმება "
-                "INCONCLUSIVE-ით ჩერდება; ჰკითხე ადამიანს, გაასწოროს ეს ცვლადი თუ წაშალოს")
-    return ("gitleaks არ არის — საიდუმლოებს commit-ზე ძრავის საკუთარი სკანერი ამოწმებს (უფრო სუსტია: git-ის "
-            "ისტორიას არ ამოწმებს); შესთავაზე ადამიანს gitleaks-ის დაყენება მისი „კი“-თ "
+        return (f"`GITLEAKS_BIN` names a file that does not exist ({explicit}) — the secrets check "
+                "stops INCONCLUSIVE; ask the person whether to fix this variable or remove it")
+    return ("no gitleaks — the engine's own scanner checks secrets at commit (weaker: it does not check git's "
+            "history); offer the person to install gitleaks, with their yes "
             f"({INSTALL['gitleaks']})")
 
 
@@ -93,8 +93,8 @@ def sandbox_note(root: Path) -> str | None:
         import sandbox_state as sb
         return sb.firstrun_note(*sb.sandbox_state(root))
     except Exception as e:  # a copy without tools/sandbox_state.py, say — say so
-        return (f"sandbox-ის მდგომარეობის წაკითხვა ვერ მოხერხდა ({type(e).__name__}: {e}) — `tools/sandbox_state.py` "
-                "ხელით უნდა შემოწმდეს")
+        return (f"the sandbox state could not be read ({type(e).__name__}: {e}) — `tools/sandbox_state.py` "
+                "must be checked by hand")
 
 
 def setup(root: Path) -> tuple[list[str], list[str], list[str]]:
@@ -104,29 +104,29 @@ def setup(root: Path) -> tuple[list[str], list[str], list[str]]:
     missing: list[str] = []
     gate_off: list[str] = []
     if shutil.which("git") is None:
-        return done, ["git არ არის დაყენებული — შენახვის წერტილები (commit) და commit-ის შემოწმებები ვერ იმუშავებს; "
-                      f"შესთავაზე ადამიანს დაყენება ({INSTALL['git']}) და დაელოდე მის „კი“-ს"], gate_off
+        return done, ["git is not installed — save points (commits) and the commit checks cannot work; "
+                      f"offer the person the install ({INSTALL['git']}) and wait for their yes"], gate_off
     top = repo_top(root)
     if top is None:
         r = git(root, "init", "-q")
         if r.returncode != 0:
-            return done, [f"`git init` ვერ შესრულდა: {(r.stderr or r.stdout).strip()[-200:]}"], gate_off
-        done.append("საქაღალდე git-ის რეპოდ იქცა (`git init`): ყოველი ნაბიჯი შენახვის წერტილით (commit) შეინახება")
+            return done, [f"`git init` failed: {(r.stderr or r.stdout).strip()[-200:]}"], gate_off
+        done.append("the folder became a git repository (`git init`): every step is kept as a save point (commit)")
     elif top != root:
-        return done, [f"პროექტი სხვა git-რეპოს შიგნითაა ({top}) — მის პარამეტრებს ძრავა არ ეხება; "
-                      "ჰკითხე ადამიანს, ცალკე რეპო ხომ არ სჯობს"], gate_off
+        return done, [f"the project is inside another git repository ({top}) — the engine does not touch its settings; "
+                      "ask the person whether a separate repository would be better"], gate_off
     hook = root / ".githooks" / "pre-commit"
     hooks = git(root, "config", "--get", "core.hooksPath").stdout.strip()  # this repository's, else the person's own
     if not hooks and hook.is_file():
         if git(root, "config", "--local", "core.hooksPath", ".githooks").returncode == 0:
-            done.append("commit-ის შემოწმებები ჩაირთო (`core.hooksPath = .githooks`, მხოლოდ ამ რეპოში)")
+            done.append("the commit checks are on (`core.hooksPath = .githooks`, in this repository only)")
         else:
-            gate_off.append("`core.hooksPath` ვერ ჩაიწერა — commit-ის შემოწმებები არ მუშაობს")
+            gate_off.append("`core.hooksPath` could not be written — the commit checks do not work")
     elif hooks and hooks.replace("\\", "/").rstrip("/") != ".githooks":
-        gate_off.append(f"`core.hooksPath = {hooks[:120]}` — ძრავის commit-ის შემოწმებები არ მუშაობს; ჰკითხე ადამიანს, "
-                        "შეიცვალოს თუ არა ამ რეპოში `.githooks`-ით")
+        gate_off.append(f"`core.hooksPath = {hooks[:120]}` — the engine's commit checks do not work; ask the person "
+                        "whether to change it to `.githooks` in this repository")
     elif not hook.is_file():  # git skips a missing hook without a word
-        gate_off.append("`.githooks/pre-commit` არ არის — commit-ის შემოწმებები არ მუშაობს")
+        gate_off.append("`.githooks/pre-commit` is missing — the commit checks do not work")
     if os.name != "nt" and hook.is_file() and not os.access(hook, os.X_OK):  # git on macOS/Linux skips it
         why_not = ""
         try:  # a link (even to a file in the project) or a file outside the project is not ours to change
@@ -138,22 +138,22 @@ def setup(root: Path) -> tuple[list[str], list[str], list[str]]:
         else:
             try:
                 hook.chmod(hook.stat().st_mode | 0o100)  # the owner only: git runs the hook as the person who commits
-                done.append("`.githooks/pre-commit` გაშვებადი გახდა (`chmod +x`) — მის გარეშე git commit-ის "
-                            "შემოწმებას macOS-სა და Linux-ზე ჩუმად გამოტოვებდა")
+                done.append("`.githooks/pre-commit` was made executable (`chmod +x`) — without it git would silently skip the commit "
+                            "check on macOS and Linux")
             except OSError as e:
                 why_not = e.strerror or type(e).__name__
         if why_not:
-            gate_off.append(f"`.githooks/pre-commit` გაშვებადი არ არის და ვერ გახდა ({why_not}) — commit-ის "
-                            "შემოწმებები არ მუშაობს; ჰკითხე ადამიანს `chmod +x .githooks/pre-commit`")
+            gate_off.append(f"`.githooks/pre-commit` is not executable and could not be made so ({why_not}) — the commit "
+                            "checks do not work; ask the person to run `chmod +x .githooks/pre-commit`")
     who = [key for key in ("user.name", "user.email") if not git(root, "config", "--get", key).stdout.strip()]
     if who:
-        missing.append(f"git-ს არ აქვს {' და '.join(who)} — commit (შენახვის წერტილი) ვერ შეიქმნება; ჰკითხე ადამიანს "
-                       "სახელი და ელფოსტა და მისი პასუხით ჩაწერე მხოლოდ ამ რეპოში (`git config --local user.name …`, "
-                       "`git config --local user.email …`; საჯარო რეპოსთვის GitHub-ის დამალული მისამართი "
-                       "`…@users.noreply.github.com` სჯობს)")
+        missing.append(f"git has no {' and '.join(who)} — no commit (save point) can be made; ask the person "
+                       "for a name and an email and write their answer into this repository only (`git config --local user.name …`, "
+                       "`git config --local user.email …`; for a public repository GitHub's private address "
+                       "`…@users.noreply.github.com` is better)")
     if sys.version_info < (3, 12):  # why 3.12: .claude/hooks/py.sh
-        missing.append(f"Python {sys.version_info.major}.{sys.version_info.minor} — ძრავას 3.12 ან უფრო ახალი სჭირდება; "
-                       f"შესთავაზე ადამიანს დაყენება ({INSTALL['python']})")
+        missing.append(f"Python {sys.version_info.major}.{sys.version_info.minor} — the engine needs 3.12 or newer; "
+                       f"offer the person the install ({INSTALL['python']})")
     note = gitleaks_note()
     if note:
         missing.append(note)
@@ -200,11 +200,11 @@ def main() -> int:
             return 0
         record_told(marker, text)
     except Exception as e:  # never break the session start
-        done, missing, gate_off = [], [f"პირველი გაშვების შემოწმება ვერ შესრულდა: {type(e).__name__}: {e}"], []
-    lines = ["## პირველი გაშვება — ძრავა თავად ეწყობა (`.claude/hooks/firstrun.py`, ADR-0011)"]
-    lines += [f"- გაკეთდა: {d}" for d in done]
-    lines += [f"- აკლია: {m}" for m in gate_off + missing]
-    lines.append("- ადამიანს ეს ერთი-ორი უბრალო წინადადებით უთხარი; setup-ს ნუ სთხოვ და მის იდეაზე მუშაობას ნუ შეაჩერებ.")
+        done, missing, gate_off = [], [f"the first-run check failed: {type(e).__name__}: {e}"], []
+    lines = ["## First run — the engine sets itself up (`.claude/hooks/firstrun.py`, ADR-0011)"]
+    lines += [f"- done: {d}" for d in done]
+    lines += [f"- missing: {m}" for m in gate_off + missing]
+    lines.append("- Tell the person this in one or two plain sentences; do not ask them for setup and do not stop work on their idea.")
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "\n".join(lines)}},
                      ensure_ascii=False))
     return 0

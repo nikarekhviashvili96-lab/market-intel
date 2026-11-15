@@ -841,7 +841,9 @@ SPEC_DOTS_RE = re.compile(r"(?:^|\|)\s*(?:…|\.\.\.)\s*(?=\||$)"               
                           r"|\b(?:Given|When|Then)\s+…")
 SPEC_ROW_RE = re.compile(r"^\|\s*\**((?:REQ|AC)-\d+)\**\s*\|")
 SPEC_EMPTY_RE = re.compile(r"^(?:[\s\-–—.?]*|todo|tbd|tktk)$", re.I)
-SPEC_QUESTIONS_RE = re.compile(r"^#{1,2}\s+(?:\d+\.\s*)?ღია კითხვები")
+# Headings are read in both languages: the engine's templates are English (owner, 2026-11-15), older documents Georgian.
+SPEC_QUESTIONS_RE = re.compile(r"^#{1,2}\s+(?:\d+\.\s*)?(?:ღია კითხვები|(?i:open questions))")
+TEMPLATE_TOKEN_RE = re.compile(r"<[^<>\n`]*[^\s<>`]>")  # a `<…>` placeholder as the template writes it
 SPEC_ITEM_RE = re.compile(r"^ {0,3}(?:[-*+]|\d+[.)])\s+(.*)$")
 
 
@@ -882,9 +884,20 @@ def _template_lines(root: Path) -> set[str] | None:
             and not _is_table_sep(line) and not (i + 1 < len(rows) and _is_table_sep(rows[i + 1][1]))}
 
 
+def _template_tokens(root: Path) -> set[str]:
+    """Every `<…>` placeholder the spec template itself writes (e.g. `<short title>`): left in a spec, it is unfinished —
+    whatever language the template is in. SPEC_TOKEN_RE still catches any `<ქართული>` placeholder of an older template."""
+    try:
+        text = (root / SPEC_TEMPLATE).read_text(encoding="utf-8")
+    except OSError:
+        return set()
+    return set(TEMPLATE_TOKEN_RE.findall(INLINE_CODE_RE.sub("", text)))
+
+
 def _check_specs(g: Graph) -> list[Issue]:
     specs = [n for n in g.nodes.values() if not n.foreign and n.type == "spec" and n.status in SPEC_CHECKED]
     template = _template_lines(g.root) if specs else set()
+    tokens = _template_tokens(g.root) if specs else set()
     out: list[Issue] = []
     for n in specs:
         if template is None:  # half of the check cannot run, and that is not a pass (review Q6) — filed under the spec,
@@ -912,7 +925,8 @@ def _check_specs(g: Graph) -> list[Issue]:
             elif in_q and (m := SPEC_ITEM_RE.match(line)) and not m.group(1).startswith("~~") \
                     and m.group(1).strip() not in ("…", "..."):
                 questions += 1
-            why = ("placeholder" if SPEC_TOKEN_RE.search(bare) or (body and SPEC_DOTS_RE.search(bare))
+            why = ("placeholder" if SPEC_TOKEN_RE.search(bare) or any(t in bare for t in tokens)
+                   or (body and SPEC_DOTS_RE.search(bare))
                    else "text" if body and s and _norm(s) in (template or set()) else "")
             row = SPEC_ROW_RE.match(s) if body and not why else None
             cells = _cells(s) if row else []
@@ -970,7 +984,8 @@ def idea_written(path: Path) -> bool:
 
 
 QUESTION_RE = re.compile(r"^\s*(?:\d+[.)]|[-*+])\s+\S")  # a list item in §7: an interview question still open
-BUILDER_CHECKED = "მშენებლის შემოწმება"  # what /intent writes into the history once the builder check has run
+BUILDER_CHECKED = "Builder check"  # what /intent writes into the history once the builder check has run
+BUILDER_CHECKED_ANY = (BUILDER_CHECKED, "მშენებლის შემოწმება")  # read both: older intents carry the Georgian line
 
 
 def interview_state(path: Path) -> str:
@@ -983,8 +998,8 @@ def interview_state(path: Path) -> str:
     q = re.search(r"^## 7\b[^\n]*\n(.*?)(?=^## |\Z)", text, re.S | re.M)
     if not q or any(QUESTION_RE.match(ln) for ln in q.group(1).splitlines()):
         return "open"
-    h = re.search(r"^## ცვლილებების ისტორია[^\n]*\n(.*?)(?=^## |\Z)", text, re.S | re.M)
-    return "done" if h and BUILDER_CHECKED in h.group(1) else "check"
+    h = re.search(r"^## (?:ცვლილებების ისტორია|[Cc]hange history)[^\n]*\n(.*?)(?=^## |\Z)", text, re.S | re.M)
+    return "done" if h and any(b in h.group(1) for b in BUILDER_CHECKED_ANY) else "check"
 
 
 def pending(g: Graph, engine: bool = False) -> list[Node]:
@@ -1006,7 +1021,7 @@ def approve_hint(n: Node) -> str:
         return "/approve intent"
     m = re.fullmatch(r"[A-Z]+-(\d{4})", n.id)
     if not m:  # e.g. SPEC-0002-0001 would otherwise read as `/approve spec 0001` — a different document (review S5)
-        return "(id არასწორია — ჯერ frontmatter-ის id უნდა გასწორდეს)"
+        return "(the id is invalid — fix the frontmatter id first)"
     if n.type == "plan" and n.status == "done":  # the owner's word after the show and the pilot (ADR-0013)
         return f"/approve live {m.group(1)}"
     return f"/approve {n.type} {m.group(1)}"
@@ -1017,8 +1032,8 @@ def approve_hint(n: Node) -> str:
 # observe, ADR-0013) and plan.md's phases F1–F6. The conductor stores nothing — each call reads the same statuses the
 # graph reads and says where the project stands and what comes next, for the person and for the agent. Stage 6 begins
 # with the owner's own word: a finished plan (`done`) becomes `live` only through `/approve live N`.
-STAGES = {1: "განზრახვა", 2: "სპეციფიკაცია", 3: "არქიტექტურა", 4: "გეგმა და აშენება", 5: "ჩვენება და პილოტი",
-          6: "გაშვება და დაკვირვება"}
+STAGES = {1: "Intent", 2: "Specification", 3: "Architecture", 4: "Plan and build", 5: "Show and pilot",
+          6: "Run and observe"}
 
 
 @dataclass
@@ -1037,7 +1052,7 @@ class Stage:
 
     @property
     def label(self) -> str:
-        return f"ეტაპი {self.number}/{len(STAGES)} · {self.name}"
+        return f"Stage {self.number}/{len(STAGES)} · {self.name}"
 
     def status_line(self) -> str:
         return printable(f"{self.label} — {self.short}" + (f" → {self.command}" if self.command else ""))
@@ -1046,14 +1061,14 @@ class Stage:
         where = f" (`{self.doc}`)" if self.doc else ""
         path = " → ".join(f"{k} {v}" for k, v in STAGES.items())
         return printable("\n".join([
-            "## ეტაპი — სად დგას პროექტი (`bash .claude/hooks/py.sh tools/context_graph.py stage`, ADR-0011)",
+            "## Stage — where the project stands (`bash .claude/hooks/py.sh tools/context_graph.py stage`, ADR-0011)",
             f"- **{self.label}** — {self.step}{where}",
-            f"- ადამიანს: {self.person}",
-            f"- აგენტს: {self.agent}",
-            f"- გზა (ADR-0001-ის ციკლი, plan.md-ის F1–F6): {path}. ადამიანს ეტაპი ჩვეულებრივი სიტყვებით უთხარი, "
-            "ბრძანება — ზუსტად.",
-            "- ეს ბლოკი ყოველ ჯერზე დოკუმენტების სტატუსებიდან ითვლება: თუ progress.md-ის, plan.md-ის ან tasks/todo.md-ის "
-            "ჩანაწერი მას ეწინააღმდეგება, ის ჩანაწერი ძველია — ამ ბლოკს მიჰყევი, ჩანაწერი კი `/session-close`-ით გაასწორე.",
+            f"- For the person: {self.person}",
+            f"- For the agent: {self.agent}",
+            f"- Path (ADR-0001's loop, plan.md's F1–F6): {path}. Tell the person the stage in plain words, "
+            "the command exactly.",
+            "- This block is computed from the documents' statuses every time: if an entry in progress.md, plan.md or "
+            "tasks/todo.md contradicts it, that entry is stale — follow this block and fix the entry with `/session-close`.",
         ]))
 
 
@@ -1062,7 +1077,7 @@ def guide_note(g: Graph, section: str) -> str:
     intent = g.nodes.get("intent.md")
     kind = intent.kind if intent is not None and intent.kind in KINDS else ""
     path = f"docs/guides/{kind}.md"
-    return f"; სახელმძღვანელო — `{path}` {section}" if kind and (g.root / path).is_file() else ""
+    return f"; guide — `{path}` {section}" if kind and (g.root / path).is_file() else ""
 
 
 def code_checks_off(root: Path) -> bool:
@@ -1076,23 +1091,23 @@ def code_checks_off(root: Path) -> bool:
     return all(i in gates and not gates[i].get("enabled", False) for i in ("lint", "unit"))
 
 
-NEEDS_KIND = ("ჯერ ჩაწერე intent.md-ის frontmatter-ში პროექტის ტიპი — `kind:` website / game / agent / automation / "
-              "other (ცხრილი: `docs/guides/other.md`) — და კითხვები მისი სახელმძღვანელოს §1-დან აიღე; ")
-CHECKS_FIRST = ("ჯერ ჩართე კოდის შემოწმებები (გეგმის პირველი ამოცანა): `tools/gates/gates.toml`-ში `lint` — ახლავე, "
-                "`unit` — პირველ ტესტთან ერთად (ცარიელი ტესტების გაშვება არაფერს ამტკიცებს), სტეკის ADR-ის ბრძანებებით "
-                "და მხოლოდ პროექტის საკუთარ კოდზე (არა ძრავის `tools/`-ზე); ფაილი დაცულია — ადამიანს „კი“ ჰკითხე, ხელით "
-                "რედაქტირებას ნუ სთხოვ; მერე ")
+NEEDS_KIND = ("First write the project type into intent.md's frontmatter — `kind:` website / game / agent / automation / "
+              "other (table: `docs/guides/other.md`) — and take the questions from §1 of its guide; ")
+CHECKS_FIRST = ("First switch on the code checks (the plan's first task): in `tools/gates/gates.toml`, `lint` — now, "
+                "`unit` — with the first test (running empty tests proves nothing), with the stack ADR's commands "
+                "and only on the project's own code (not the engine's `tools/`); the file is protected — ask the person for a "
+                "yes, do not ask them to edit it by hand; then ")
 
 
 def _review(number: int, doc: Node, step: str, fix: str) -> Stage:
     """A document waits for the person: they read it and approve it, or say what to change."""
     cmd = approve_hint(doc)
-    return Stage(number, short=f"{doc.id} გელოდება", step=step,
-                 person=f"აგენტი ჩატში მოკლედ გაჩვენებს, რა წერია (ფაილი — `{doc.path}`); თუ ეთანხმები — `{cmd}`, "
-                        "თუ არა — თქვი, რა შეიცვალოს",
-                 agent=f"{doc.id}: ჩატში აჩვენე მოკლე შეჯამება — რას გააკეთებს, რას არა, რა უნდა გადაწყვიტოს ადამიანმა "
-                       f"(ფაილის წაკითხვას ნუ სთხოვ); შეასწორე მისი შენიშვნებით ({fix}); დამტკიცება მხოლოდ მისი `{cmd}`-ია, "
-                       "მის შემდეგ კი ეგრევე შეინახე (CHECKPOINT commit) და შემდეგ ნაბიჯზე გადადი — „გავაგრძელო?“-ს ნუ იკითხავ",
+    return Stage(number, short=f"{doc.id} waits for you", step=step,
+                 person=f"The agent shows you briefly in the chat what it says (file — `{doc.path}`); if you agree — `{cmd}`, "
+                        "if not — say what should change",
+                 agent=f"{doc.id}: show a short summary in the chat — what it will do, what not, what the person must decide "
+                       f"(do not ask them to read the file); revise it with their notes ({fix}); the approval is only their `{cmd}`, "
+                       "and right after it save (CHECKPOINT commit) and move to the next step — do not ask \"shall I continue?\"",
                  command=cmd, doc=doc.path)
 
 
@@ -1101,90 +1116,90 @@ def project_stage(g: Graph) -> Stage:
     intent = g.nodes.get("intent.md")
     if intent is None or intent.status != "accepted":
         if intent is None or not idea_written(g.root / intent.path):
-            return Stage(1, short="დაწერე შენი იდეა", step="იდეა ჯერ არ არის ჩაწერილი",
-                         person="დაწერე შენი იდეა ჩვეულებრივი სიტყვებით: რა გინდა შექმნა და ვისთვის",
-                         agent="როცა ადამიანი იდეას დაწერს — `/intent`: ჩაწერე ის intent.md-ის §1-ში მისივე სიტყვებით "
-                               "და frontmatter-ში ტიპი (`kind:` website / game / agent / automation / other), მერე ინტერვიუ, "
-                               "ერთი კითხვა ერთ ჯერზე, `docs/guides/<kind>.md` §1-ით. setup-ს ნუ სთხოვ — ძრავა უკვე აწყობილია",
+            return Stage(1, short="write your idea", step="the idea is not written yet",
+                         person="Write your idea in plain words: what you want to make and for whom",
+                         agent="When the person writes the idea — `/intent`: write it into intent.md §1 in their own words "
+                               "and the type into the frontmatter (`kind:` website / game / agent / automation / other), then the "
+                               "interview, one question at a time, by `docs/guides/<kind>.md` §1. Do not ask for setup — the engine is already set up",
                          doc="intent.md")
         interview = interview_state(g.root / intent.path)
         if interview == "check":  # §7 is empty: one step only — the approval is not named until the check has run (D-083)
-            return Stage(1, short="მშენებლის შემოწმება", step="ინტერვიუ დასრულდა — ტექსტის შემოწმება ჯერ არ გაკეთებულა",
-                         person="დაელოდე — აგენტი `intent.md`-ს ცალკე აგენტს წააკითხებს, რომელსაც თქვენი საუბარი არ "
-                                "უნახავს, და გკითხავს მხოლოდ იმას, რაც მას ამ ტექსტით აშენებისას დააკლდებოდა",
-                         agent="ახლა მხოლოდ მშენებლის შემოწმება (`/intent`, ნაბიჯი 4; ტექსტი — "
-                               "`.claude/skills/intent/builder-check.md`): ერთი ახალი subagent `intent.md`-ს მარტო ტექსტით "
-                               "კითხულობს. მისი კითხვებიდან ის, რასაც ტექსტი ან საუბარი უკვე პასუხობს, ჩაწერე; წვრილმანი "
-                               "თავად გადაწყვიტე და **ჰიპოთეზად** მონიშნე; რასაც მხოლოდ ადამიანი უპასუხებს (მაქსიმუმ სამი), "
-                               "§7-ში ჩაწერე და ერთ შეტყობინებაში ჰკითხე; მერე `intent.md`-ის ცვლილებების ისტორიაში "
-                               f"ჩაწერე ხაზი „{BUILDER_CHECKED}: …“ — დამტკიცებას მანამდე ნუ შესთავაზებ",
+            return Stage(1, short="builder check", step="the interview is over — the text has not been checked yet",
+                         person="Wait — the agent has `intent.md` read by a separate agent that has not seen your "
+                                "conversation, and asks you only what it would miss when building from this text",
+                         agent="Now only the builder check (`/intent`, step 4; text — "
+                               "`.claude/skills/intent/builder-check.md`): one new subagent reads `intent.md` from the text "
+                               "alone. Of its questions, write down what the text or the conversation already answers; decide "
+                               "small things yourself and mark them as a **hypothesis**; what only the person can answer (at most three), "
+                               "write into §7 and ask in one message; then write the line "
+                               f"\"{BUILDER_CHECKED}: …\" into `intent.md`'s change history — do not offer the approval before that",
                          doc="intent.md")
         if interview == "done":
-            return _review(1, intent, "ინტერვიუ და მისი შემოწმება დასრულდა — განზრახვა შენს დამტკიცებას ელოდება",
+            return _review(1, intent, "the interview and its check are done — the intent waits for your approval",
                            "`/intent`")
-        return Stage(1, short="ინტერვიუ", step="ინტერვიუ — განზრახვა იწერება",
-                     person="უპასუხე კითხვებს; როცა intent.md შენს აზრს სწორად ასახავს — `/approve intent`",
+        return Stage(1, short="interview", step="interview — the intent is being written",
+                     person="Answer the questions; when intent.md says what you mean — `/approve intent`",
                      agent=("" if intent.kind in KINDS else NEEDS_KIND)
-                     + "გააგრძელე `/intent`-ის ინტერვიუ — ერთი კითხვა ერთ შეტყობინებაში, 2–3 ვარიანტითა და "
-                       "რეკომენდაციით; როცა ღია კითხვა აღარ დარჩება, ჯერ მშენებლის შემოწმება (`/intent`, ნაბიჯი 4; "
-                       "ტექსტი — `.claude/skills/intent/builder-check.md`) და მისი ხაზი `intent.md`-ის ისტორიაში, მერე "
-                       "მოკლედ აჩვენე, რა ჩაიწერა, და შესთავაზე `/approve intent`"
-                     + guide_note(g, "§1 — კითხვები (ისინი §7-ის შაბლონურ სიას ცვლის: §7-ში მხოლოდ ჯერ უპასუხო "
-                                     "კითხვები დატოვე)"),
+                     + "continue `/intent`'s interview — one question per message, with 2–3 options and a "
+                       "recommendation; when no open question is left, first the builder check (`/intent`, step 4; "
+                       "text — `.claude/skills/intent/builder-check.md`) and its line in `intent.md`'s history, then "
+                       "show briefly what was written and offer `/approve intent`"
+                     + guide_note(g, "§1 — questions (they replace §7's template list: keep only still unanswered "
+                                     "questions in §7)"),
                      command="/approve intent", doc="intent.md")
     specs = sorted((n for n in g.nodes.values() if n.type == "spec" and not n.foreign and n.status != "superseded"),
                    key=lambda n: n.id)
     if not specs:
-        return Stage(2, short="აგენტი წერს სპეციფიკაციას", step="განზრახვა დამტკიცებულია — სპეციფიკაცია ჯერ არ არის",
-                     person="დაელოდე — აგენტი წერს სპეციფიკაციას: რა უნდა შეეძლოს შედეგს, შემოწმებადი კრიტერიუმებით",
-                     agent="დაწერე პირველი სპეციფიკაცია: `/spec`" + guide_note(g, "§3 — პირველი ვერსიის ფარგლები"))
+        return Stage(2, short="the agent writes the specification", step="the intent is approved — no specification yet",
+                     person="Wait — the agent writes the specification: what the result must be able to do, with testable criteria",
+                     agent="Write the first specification: `/spec`" + guide_note(g, "§3 — scope of the first version"))
     spec = specs[-1]
     if spec.status != "approved":
-        return _review(2, spec, f"{spec.id} შენს გადახედვას ელოდება",
-                       "`/spec`; წარდგენამდე — spec-reviewer და მშენებლის შემოწმება")
+        return _review(2, spec, f"{spec.id} waits for your review",
+                       "`/spec`; before it is shown — spec-reviewer and the builder check")
     adrs = [n for n in g.nodes.values() if n.type == "adr" and not n.foreign and not is_engine(n)]
     if not any(n.status == "accepted" for n in adrs):
         proposed = sorted((n for n in adrs if n.status == "proposed"), key=lambda n: n.id)
         if proposed:
-            return _review(3, proposed[0], f"{proposed[0].id} (რით აშენდეს) შენს გადაწყვეტილებას ელოდება", "`/adr`")
-        return Stage(3, short="აგენტი სტეკს გთავაზობს",
-                     step=f"{spec.id} დამტკიცებულია — ჯერ არ არის გადაწყვეტილი, რით აშენდეს",
-                     person="აგენტი შემოგთავაზებს, რით აშენდეს (ტექნოლოგია, ჰოსტინგი) — აირჩიე",
-                     agent="შესთავაზე 2–3 ვარიანტი რეკომენდაციით; არჩეული ჩაწერე `/adr`-ით (`scope`-ის გარეშე — ეს "
-                           "პროექტის გადაწყვეტილებაა); ADR-ში ჩაწერე ხუთი ბრძანება — install · run · lint · test · show"
-                           + guide_note(g, "§2 — ვარიანტები და მათი ბრძანებები"))
+            return _review(3, proposed[0], f"{proposed[0].id} (what to build it with) waits for your decision", "`/adr`")
+        return Stage(3, short="the agent proposes a stack",
+                     step=f"{spec.id} is approved — what to build it with is not decided yet",
+                     person="The agent proposes what to build it with (technology, hosting) — choose",
+                     agent="Offer 2–3 options with a recommendation; record the choice with `/adr` (without `scope` — this "
+                           "is the project's decision); write the five commands into the ADR — install · run · lint · test · show"
+                           + guide_note(g, "§2 — options and their commands"))
     plans = sorted((n for n in g.nodes.values() if n.type == "plan" and not n.foreign
                     and any(t.path == spec.path for t in _rel_targets(g, n, "spec"))), key=lambda n: n.id)
     if not plans:
-        return Stage(4, short="აგენტი გეგმას ადგენს", step=f"{spec.id}-ს გეგმა ჯერ არ აქვს",
-                     person="დაელოდე — აგენტი გეგმას ადგენს: რა ამოცანებად აშენდება და როგორ შემოწმდება",
-                     agent=f"`/feature-plan` — გეგმა {spec.id}-ზე")
+        return Stage(4, short="the agent drafts the plan", step=f"{spec.id} has no plan yet",
+                     person="Wait — the agent drafts the plan: in which tasks it will be built and how it will be checked",
+                     agent=f"`/feature-plan` — a plan for {spec.id}")
     plan = plans[-1]
     if plan.status == "draft":
-        return _review(4, plan, f"{plan.id} შენს გადახედვას ელოდება", "`/feature-plan`")
+        return _review(4, plan, f"{plan.id} waits for your review", "`/feature-plan`")
     if plan.status == "live":  # the owner's `/approve live N` after the show and the pilot (ADR-0013)
-        return Stage(6, short="ცოცხალია — დააკვირდი", step=f"{plan.id} ცოცხალშია — გაშვება და დაკვირვება",
-                     person="დააკვირდი ცოცხალ შედეგს: რას ამბობენ მომხმარებლები, სად ცდება, რა ჯდება; რაც არ მუშაობს ან "
-                            "აკლია — უბრალოდ დაწერე, ის ახალი სპეციფიკაცია გახდება",
-                     agent="დაკვირვების რიტმი და საზომები — სპეციფიკაციის §6 (წარმატების საზომი) და გაიდის §6; ხარჯი და "
-                           "აგენტების საქმე — `/observatory`; AI-პროდუქტზე eval-ნაკრები მოდელის ან ინსტრუქციის ყოველ "
-                           "ცვლილებაზე თავიდან ეშვება (drift); ცოცხალი შეცდომა ჯერ ტესტი ან eval-შემთხვევა ხდება, მერე "
-                           "ამოცანა ან ახალი `/spec` — უკუკავშირის მარყუჟი (ADR-0013)"
-                           + guide_note(g, "§6 — გაშვება და დაკვირვება"), doc=plan.path)
+        return Stage(6, short="live — observe", step=f"{plan.id} is live — run and observe",
+                     person="Watch the live result: what users say, where it fails, what it costs; whatever does not work or "
+                            "is missing — just write it, it becomes a new specification",
+                     agent="Observation rhythm and measures — the spec's §6 (success measures) and the guide's §6; cost and "
+                           "the agents' work — `/observatory`; for an AI product the eval set re-runs on every model or "
+                           "instruction change (drift); a live error first becomes a test or an eval case, then "
+                           "a task or a new `/spec` — the feedback loop (ADR-0013)"
+                           + guide_note(g, "§6 — run and observe"), doc=plan.path)
     if plan.status != "done":
-        return Stage(4, short=f"{plan.id} მიმდინარეობს", step=f"{plan.id} მიმდინარეობს — აგენტი ამოცანა-ამოცანა აშენებს",
-                     person="აგენტი ამოცანა-ამოცანა აშენებს; როცა რამეს გკითხავს — შენს მონაცემებს, „კი“-ს დაყენებაზე "
-                            "ან დაცული ფაილის შეცვლაზე — უპასუხე; ბოლოს შედეგს გაჩვენებს",
+        return Stage(4, short=f"{plan.id} in progress", step=f"{plan.id} in progress — the agent builds task by task",
+                     person="The agent builds task by task; when it asks you something — your data, a yes to an install "
+                            "or to changing a protected file — answer; at the end it shows you the result",
                      agent=(CHECKS_FIRST if code_checks_off(g.root) else "")
-                     + f"შეასრულე {plan.id} ამოცანა-ამოცანა (`/feature-plan`, ნაწილი B): ტესტი, კოდი, gate-ები, commit; "
-                       "ბოლოს აჩვენე შედეგი", doc=plan.path)
+                     + f"carry out {plan.id} task by task (`/feature-plan`, part B): test, code, gates, commit; "
+                       "at the end show the result", doc=plan.path)
     cmd = approve_hint(plan)
-    return Stage(5, short="ნახე შედეგი", step=f"{plan.id} დასრულებულია — ჩვენება და პილოტი",
-                 person="ნახე შედეგი და სცადე; გამოქვეყნება და პილოტი — შენი „კი“-თ; როცა ცოცხლად მუშაობს და კმაყოფილი "
-                        f"ხარ — `{cmd}`; რაც არ მოგწონს — უბრალოდ დაწერე",
-                 agent="აჩვენე შედეგი ცოცხლად (სად გახსნას, რა ნახოს, რა სცადოს); გამოქვეყნება და პილოტი — ადამიანის „კი“-თ; "
-                       f"მე-6 ეტაპზე მხოლოდ მისი `{cmd}` გადაიყვანს — `live`-ს თავად არასდროს წერ; ახალი ფუნქცია ან "
-                       "ცვლილება — ახალი `/spec`" + guide_note(g, "§4 — როგორ აჩვენო, გამოაქვეყნო და პილოტი ჩაატარო"),
+    return Stage(5, short="see the result", step=f"{plan.id} is done — show and pilot",
+                 person="See the result and try it; publishing and the pilot — with your yes; when it works live and you are "
+                        f"satisfied — `{cmd}`; whatever you dislike — just write it",
+                 agent="Show the result live (where to open it, what to see, what to try); publishing and the pilot — with the person's yes; "
+                       f"only their `{cmd}` moves it to stage 6 — you never write `live` yourself; a new feature or "
+                       "change — a new `/spec`" + guide_note(g, "§4 — how to show, publish and run the pilot"),
                  command=cmd, doc=plan.path)
 
 
@@ -1206,21 +1221,21 @@ def context_map(g: Graph, issues: list[Issue]) -> str:
         outbound[a] = outbound.get(a, 0) + 1
         inbound[b] = inbound.get(b, 0) + 1
     lines = [
-        "# კონტექსტის რუკა (context map)",
+        "# Context map",
         "",
-        f"_გენერირებულია {dt.datetime.now().astimezone().isoformat(timespec='seconds')} — `tools/context_graph.py build`; "
-        "ხელით არ იცვლება, git-ში არ ინახება._",
+        f"_Generated {dt.datetime.now().astimezone().isoformat(timespec='seconds')} — `tools/context_graph.py build`; "
+        "never edited by hand, not kept in git._",
         "",
-        f"კვანძები: {len(g.nodes)} · კავშირები: {len(g.edges())} · შეცდომები: {len(errors)}",
+        f"nodes: {len(g.nodes)} · links: {len(g.edges())} · errors: {len(errors)}",
         "",
-        "## მფლობელის დასამტკიცებელი",
+        "## Waiting for the owner's approval",
         "",
     ]
     pend = pending(g)
-    lines += [f"- {n.id} — {n.title} (`{n.status}`) → `{approve_hint(n)}`" for n in pend] or ["- არაფერი"]
+    lines += [f"- {n.id} — {n.title} (`{n.status}`) → `{approve_hint(n)}`" for n in pend] or ["- nothing"]
     eng = pending(g, engine=True)
     if eng:
-        lines += ["", "## ძრავის გადაწყვეტილებები (`scope: engine` — პროექტის ეტაპებს არ აჩერებს)", ""]
+        lines += ["", "## Engine decisions (`scope: engine` — they never hold up the project's stage)", ""]
         lines += [f"- {n.id} — {n.title} (`{n.status}`) → `{approve_hint(n)}`" for n in eng]
     for typ in ("intent", "roadmap", "progress", "spec", "plan", "adr", "domain", "memory", "lesson", "episode"):
         group = sorted((n for n in g.nodes.values() if n.type == typ and not n.foreign), key=lambda n: n.path)
@@ -1228,15 +1243,15 @@ def context_map(g: Graph, issues: list[Issue]) -> str:
             group = group[-10:]
         if not group:
             continue
-        lines += ["", f"## {typ}", "", "| id | სათაური | სტატუსი | ფაილი | ← | → |", "|---|---|---|---|---|---|"]
+        lines += ["", f"## {typ}", "", "| id | title | status | file | ← | → |", "|---|---|---|---|---|---|"]
         for n in group:
             lines.append(f"| {n.id} | {n.title} | {n.status} | `{n.path}` | {inbound.get(n.path, 0)} | {outbound.get(n.path, 0)} |")
     rel = [(a, b, k) for a, b, k in g.edges() if k != "link"]
     if rel:
-        lines += ["", "## ტიპიზებული კავშირები", ""]
+        lines += ["", "## Typed links", ""]
         lines += [f"- {g.nodes[a].id} —{k}→ {g.nodes[b].id if b in g.nodes else b}" for a, b, k in rel]
     if errors:
-        lines += ["", "## შეცდომები", ""] + [f"- {i.fmt()}" for i in errors[:40]]
+        lines += ["", "## Errors", ""] + [f"- {i.fmt()}" for i in errors[:40]]
     return "\n".join(lines) + "\n"
 
 
@@ -1294,21 +1309,21 @@ def brief(g: Graph, issues: list[Issue]) -> str:
     lines = [
         project_stage(g).block(),
         "",
-        "## კონტექსტის გრაფი (tools/context_graph.py)",
-        f"- {len(g.nodes)} კვანძი, {len(g.edges())} კავშირი, შეცდომა: {len(errors)}"
-        + (" — გაასწორე, სანამ სხვა სამუშაოს დაიწყებ:" if errors else ""),
+        "## Context graph (tools/context_graph.py)",
+        f"- {len(g.nodes)} nodes, {len(g.edges())} links, errors: {len(errors)}"
+        + (" — fix them before any other work:" if errors else ""),
     ]
     lines += [f"  - {i.fmt()}" for i in errors[:5]]
     if len(errors) > 5:
-        lines.append(f"  - … კიდევ {len(errors) - 5} (`bash .claude/hooks/py.sh tools/context_graph.py check`)")
+        lines.append(f"  - … {len(errors) - 5} more (`bash .claude/hooks/py.sh tools/context_graph.py check`)")
     if pend:
-        lines.append("- მფლობელის დასამტკიცებელი (შეახსენე; თავად ვერ დაამტკიცებ):")
+        lines.append("- Waiting for the owner's approval (remind them; you cannot approve):")
         lines += [f"  - {n.id} — {n.title} (`{n.status}`) → `{approve_hint(n)}`" for n in pend[:10]]
     if eng:
-        lines.append(f"- ძრავის საკუთარი ADR-ები (`scope: engine`): {len(eng)} `proposed` — პროექტის ეტაპებს არ აჩერებს; "
-                     "ისინი ძრავის ავტორის გადასაწყვეტია და ახალი პროექტის მფლობელს დასამტკიცებლად არ ეძლევა "
+        lines.append(f"- The engine's own ADRs (`scope: engine`): {len(eng)} `proposed` — they never hold up the project's stage; "
+                     "the engine's author decides them, and they are never offered to a new project's owner for approval "
                      "(`bash .claude/hooks/py.sh tools/context_graph.py pending`)")
-    lines.append("- ორიენტაცია: `memory/graph/CONTEXT-MAP.md`; ერთი კვანძის სამეზობლო: "
+    lines.append("- Orientation: `memory/graph/CONTEXT-MAP.md`; one node's neighbourhood: "
                  "`bash .claude/hooks/py.sh tools/context_graph.py query <id>`")
     return printable("\n".join(lines))
 

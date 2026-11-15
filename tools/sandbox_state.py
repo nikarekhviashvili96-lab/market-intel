@@ -73,10 +73,10 @@ def sandbox_state(root: Path, system: str | None = None) -> tuple[str, str]:
 def status_text(state: str, system: str) -> str:
     """The status line's words (ADR-0014): what is, not what should be."""
     if state == "none":
-        return f"🛡 sandbox არ არის — {system} (WSL2-ში მუშაობს)"
+        return f"🛡 sandbox unavailable — {system} (works in WSL2)"
     if state == "on":
-        return f"🛡 sandbox ჩართულია (settings, {system})"
-    return f"🛡 sandbox გამორთულია ({system})"
+        return f"🛡 sandbox on (settings, {system})"
+    return f"🛡 sandbox off ({system})"
 
 
 def firstrun_note(state: str, system: str) -> str | None:
@@ -84,12 +84,12 @@ def firstrun_note(state: str, system: str) -> str | None:
     if state == "on":
         return None
     if state == "none":
-        return ("sandbox (ბრძანებების იზოლირებული გაშვება: ფაილები და ქსელი შეზღუდული) ბუნებრივ Windows-ზე არ არსებობს — "
-                "Claude Code ბრძანებებს იზოლაციის გარეშე უშვებს; იზოლაცია WSL2-ში მუშაობს (README — „sandbox და WSL2“). "
-                "ადამიანს ეს ერთხელ უთხარი; დაყენებას ნუ სთხოვ")
-    return (f"sandbox (ბრძანებების იზოლირებული გაშვება) ამ სისტემაზე ({system}) მუშაობს, მაგრამ გამორთულია — ჩართვა "
-            "ადამიანის „კი“-თ: `sandbox.enabled: true` settings-ში (README — „sandbox და WSL2“); ქსელის allowlist-ი "
-            "ცარიელი იწყება და ყოველ ახალ ჰოსტზე ფანჯარა იხსნება")
+        return ("sandbox (isolated command runs: files and network restricted) does not exist on native Windows — "
+                "Claude Code runs commands without isolation; isolation works in WSL2 (README — \"sandbox and WSL2\"). "
+                "Tell the person once; do not ask them to install anything")
+    return (f"sandbox (isolated command runs) works on this system ({system}) but is off — switching it on takes "
+            "the person's yes: `sandbox.enabled: true` in settings (README — \"sandbox and WSL2\"); the network allowlist "
+            "starts empty and every new host opens a permission window")
 
 
 def main(argv: list[str] | None = None) -> int:

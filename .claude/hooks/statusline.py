@@ -4,7 +4,7 @@
 the prompt cache.
 
 The stage line names where the project stands in the F1–F6 loop and the person's next command, read from the documents'
-statuses by tools/context_graph.py (`🧭 ეტაპი 2/6 · სპეციფიკაცია — SPEC-0001 გელოდება → /approve spec 0001`).
+statuses by tools/context_graph.py (`🧭 Stage 2/6 · Specification — SPEC-0001 waits for you → /approve spec 0001`).
 
 Claude Code runs the project's `statusLine` command on every update and every `refreshInterval` seconds, with a
 JSON payload on stdin (session_id, transcript_path, model, context_window …), and shows what it prints. A project
@@ -17,16 +17,16 @@ Then the cache line. Claude Code's own `prompt_cache` payload field (seen in 2.1
 recache_tokens_if_cold) is used when present; otherwise the state is read from the tail of this session's transcript
 — when the newest model request went out and how long the cache lives (1 hour or 5 minutes, read from the newest
 write; each request renews the life):
-  ♻ ქეში თბილია ~14:05-მდე                         the next message reads the context from the cache
-  ♻ ქეში იწურება 14:05-ზე (8 წთ)                    less than 10 minutes left
-  ❄ ქეში ცივია: შემდეგი შეტყობინება 377K-ს თავიდან ჩაწერს (≈$3.02) — ახალი თემისთვის ახალი სესია იაფია
-  ❄ ქეში ცივია, კონტექსტი პატარაა (45K) — თავიდან ჩაწერა იაფია
-  ♻ ქეში: უცნობია (…)                              nothing readable — never shown as warm
+  ♻ cache warm until ~14:05                        the next message reads the context from the cache
+  ♻ cache expires at 14:05 (8 min)                  less than 10 minutes left
+  ❄ cache cold: the next message rewrites 377K (≈$3.02) — a new session is cheaper for a new topic
+  ❄ cache cold, small context (45K) — rewriting is cheap
+  ♻ cache: unknown (…)                             nothing readable — never shown as warm
 The request time is taken from the record written just before the answer began (looked for in the last 4 MB), so
 the estimate errs early.
 The cache line ends with where Claude Code's sandbox stands (ADR-0014), read by tools/sandbox_state.py from the system
-and the settings — `🛡 sandbox ჩართულია (settings, Linux)`, `🛡 sandbox გამორთულია (macOS)`, `🛡 sandbox არ არის — Windows
-(WSL2-ში მუშაობს)`; when that reading fails, `🛡 sandbox: უცნობია (…)` — never nothing.
+and the settings — `🛡 sandbox on (settings, Linux)`, `🛡 sandbox off (macOS)`, `🛡 sandbox unavailable — Windows
+(works in WSL2)`; when that reading fails, `🛡 sandbox: unknown (…)` — never nothing.
 A status line must never break the screen: this script always exits 0 and prints a short marker, never a traceback.
 The owner's line runs through bash found on PATH — never from the current folder or from inside this project, where a
 file could be planted — and it gets 4 seconds, after which it is stopped together with everything it started.
@@ -167,10 +167,10 @@ def own_line(data: dict) -> str:
     parts = [str(model.get("display_name") or model.get("id") or "?")]
     window = part(data, "context_window")
     if isinstance(window.get("used_percentage"), (int, float)):
-        parts.append(f"კონტექსტი {round(window['used_percentage'])}%")
+        parts.append(f"context {round(window['used_percentage'])}%")
     n = compactions(str(data.get("session_id") or ""))
     if n >= 3:
-        parts.append(f"{RED}↻{n} ახალი სესია → /session-close, მერე /clear{RESET}")
+        parts.append(f"{RED}↻{n} new session → /session-close, then /clear{RESET}")
     elif n:
         parts.append(f"↻{n}")
     return " · ".join(parts)
@@ -269,20 +269,20 @@ def cache_state(data: dict) -> dict | str:
         return {"expires": float(expires), "warm": pc.get("warm") is not False, "tokens": tokens, "model": "",
                 "ttl": cache_cost.TTL_5M_S if pc.get("ttl") == "5m" else cache_cost.TTL_1H_S}
     if str(data.get("transcript_path") or "").startswith(("\\\\", "//")):
-        return "ქსელური გზა — არ იხსნება"  # never touch a network share from a status line (critic S4)
+        return "network path — not opened"  # never touch a network share from a status line (critic S4)
     path = transcript_of(data)
     if path is None or not path.is_file():
-        return "სესიის ჩანაწერი არ ჩანს"
+        return "no session transcript"
     try:
         call = newest_call(records(path, TAILS[0]))
         if (call is None or not call["before"]) and path.stat().st_size > TAILS[0]:
             call = newest_call(records(path, TAILS[1])) or call  # the request's start was not in the short tail
     except OSError:
-        return "ჩანაწერი ვერ წავიკითხე"
+        return "transcript unreadable"
     if call is None:
         return EMPTY
     if not call["sent"]:
-        return "ჩანაწერს დრო არ აქვს"
+        return "transcript has no time"
     return {"expires": call["sent"] + call["ttl"], "warm": True, "ttl": call["ttl"], "tokens": call["tokens"],
             "model": call["model"]}
 
@@ -290,22 +290,22 @@ def cache_state(data: dict) -> dict | str:
 def cache_line(data: dict, now: float) -> str:
     state = cache_state(data)
     if state == EMPTY:
-        return f"{DIM}♻ ქეში: ჯერ ცარიელია{RESET}"
+        return f"{DIM}♻ cache: still empty{RESET}"
     if isinstance(state, str):
-        return f"{DIM}♻ ქეში: უცნობია ({state}){RESET}"
+        return f"{DIM}♻ cache: unknown ({state}){RESET}"
     left = state["expires"] - now
     clock = datetime.fromtimestamp(state["expires"]).strftime("%H:%M")
     if state["warm"] and left > SOON_S:
-        return f"{GREEN}♻ ქეში თბილია ~{clock}-მდე{RESET}"
+        return f"{GREEN}♻ cache warm until ~{clock}{RESET}"
     if state["warm"] and left > 0:
-        return f"{YELLOW}♻ ქეში იწურება {clock}-ზე ({math.ceil(left / 60)} წთ){RESET}"
+        return f"{YELLOW}♻ cache expires at {clock} ({math.ceil(left / 60)} min){RESET}"
     tokens = state["tokens"]
     if tokens < LARGE_TOKENS:
-        return f"{DIM}❄ ქეში ცივია, კონტექსტი პატარაა ({cache_cost.kilo(tokens)}) — თავიდან ჩაწერა იაფია{RESET}"
+        return f"{DIM}❄ cache cold, small context ({cache_cost.kilo(tokens)}) — rewriting is cheap{RESET}"
     cost = rewrite_cost(str(part(data, "model").get("id") or state["model"]), tokens, state["ttl"])
     price = f" (≈${cost:.2f})" if cost is not None else ""
-    return (f"{RED}❄ ქეში ცივია: შემდეგი შეტყობინება {cache_cost.kilo(tokens)}-ს თავიდან ჩაწერს{price}"
-            f" — ახალი თემისთვის ახალი სესია იაფია{RESET}")
+    return (f"{RED}❄ cache cold: the next message rewrites {cache_cost.kilo(tokens)}{price}"
+            f" — a new session is cheaper for a new topic{RESET}")
 
 
 def stage_line() -> str:
@@ -344,15 +344,15 @@ def main() -> int:
     try:
         stage = stage_line()
     except Exception as e:
-        stage = f"{DIM}🧭 ეტაპი: უცნობია ({type(e).__name__}){RESET}"
+        stage = f"{DIM}🧭 stage: unknown ({type(e).__name__}){RESET}"
     try:
         second = cache_line(data, time.time())
     except Exception as e:
-        second = f"{DIM}♻ ქეში: უცნობია ({type(e).__name__}){RESET}"
+        second = f"{DIM}♻ cache: unknown ({type(e).__name__}){RESET}"
     try:
         shield = sandbox_line()
     except Exception as e:
-        shield = f"{DIM}🛡 sandbox: უცნობია ({type(e).__name__}){RESET}"
+        shield = f"{DIM}🛡 sandbox: unknown ({type(e).__name__}){RESET}"
     print("\n".join(line for line in (first, stage, f"{second} · {shield}") if line))
     return 0
 

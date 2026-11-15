@@ -25,16 +25,16 @@ REBUILD_TOKENS = 50_000  # a call that re-wrote at least this much of the contex
 # Measured 2026-10-10 in this project's transcripts: the main session writes 1-hour entries, subagents 5-minute.
 TTL_1H_S, TTL_5M_S = 3600, 300
 CAUSE_KA = {
-    "start": "სესიის დაწყება",
-    "fallback": "მოდელი თავისით შეიცვალა უარის შემდეგ",
-    "model": "მოდელის გადართვა",
+    "start": "session start",
+    "fallback": "the model switched by itself after a refusal",
+    "model": "model switch",
     "compaction": "compact",
-    "restart": "Claude Code გადაიტვირთა, განახლდა ან სესია თავიდან გაიხსნა",
-    "tools": "ხელსაწყოების სია შეიცვალა (მაგ. MCP სერვერი ჩაირთო ან გაითიშა)",
-    "ttl": "პაუზა ქეშის ვადაზე გრძელი",
-    "other": "მიზეზი უცნობია",
+    "restart": "Claude Code restarted, updated or the session was reopened",
+    "tools": "the tool list changed (e.g. an MCP server connected or disconnected)",
+    "ttl": "a pause longer than the cache's life",
+    "other": "cause unknown",
 }
-PART_KA = {"read": "ქეშიდან კითხვა", "write": "ქეშში ჩაწერა", "output": "პასუხი", "uncached": "ქეშის გარეშე"}
+PART_KA = {"read": "cache read", "write": "cache write", "output": "output", "uncached": "uncached"}
 # The cause Claude Code's transcript names itself (an assistant message's diagnostics.cache_miss_reason). The other
 # values seen — messages_changed, previous_message_not_found, unavailable — name no cause of ours and are not used.
 MISS_CAUSE = {"model_changed": "model", "tools_changed": "tools"}
@@ -238,34 +238,34 @@ def kilo(n: int) -> str:
 
 
 def render(s: dict) -> list[str]:
-    """The Georgian report section for tools/observe.py."""
-    lines = ["## ქეში და ხარჯი"]
+    """The report section for tools/observe.py."""
+    lines = ["## Cache and cost"]
     if not s["requests"]:
-        return lines + ["მოდელის გამოძახება (usage-ით) ვერ ვიპოვე — ხარჯს ვერ ვითვლი."]
+        return lines + ["no model call (with usage) found — cost cannot be computed."]
     share = f"{s['cache_share']}%" if s["cache_share"] is not None else "?"
     if s["error"] or s["usd"] is None:
-        why = s["error"] or "არცერთ მოდელს ფასი არ აქვს"
-        lines.append(f"ფასი უცნობია ({why}) · ქეშიდან წაკითხული შემავალი ტექსტი: {share}")
+        why = s["error"] or "no model has a price"
+        lines.append(f"price unknown ({why}) · input read from cache: {share}")
     else:
-        lines.append(f"API-ის ფასით ≈ ${s['usd']:.2f} — გამოწერის ლიმიტის საზომი, არა ანგარიში · "
-                     f"ქეშიდან წაკითხული შემავალი ტექსტი: {share}")
+        lines.append(f"at API prices ≈ ${s['usd']:.2f} — a measure of the subscription limit, not a bill · "
+                     f"input read from cache: {share}")
         total = sum(s["parts"].values()) or 1.0
-        lines.append("სად მიდის: " + " · ".join(f"{PART_KA[k]} {100 * v / total:.0f}%"
+        lines.append("where it goes: " + " · ".join(f"{PART_KA[k]} {100 * v / total:.0f}%"
                                                for k, v in sorted(s["parts"].items(), key=lambda kv: -kv[1])))
         models = sorted(s["by_model"].items(), key=lambda kv: -(kv[1]["usd"] or 0))
-        lines.append("მოდელები: " + " · ".join(
-            f"{k} ${v['usd']:.2f} ({v['requests']} გამოძახება)" if v["usd"] is not None
-            else f"{k} — ფასი არ აქვს ({v['requests']} გამოძახება)" for k, v in models))
+        lines.append("models: " + " · ".join(
+            f"{k} ${v['usd']:.2f} ({v['requests']} calls)" if v["usd"] is not None
+            else f"{k} — no price ({v['requests']} calls)" for k, v in models))
     if s["rebuilds"]:
-        lines.append("„თავიდან აწყობა\" (ერთ ნაბიჯზე 50K+ უკვე არსებული ტოკენის ხელახლა ჩაწერა): " + " · ".join(
+        lines.append("\"rebuilds\" (50K+ existing tokens rewritten in one step): " + " · ".join(
             f"{CAUSE_KA[c]} ×{v['count']} ({kilo(v['tokens'])})" for c, v in s["rebuilds"].items()))
         if s["rebuild_share_main"] is not None:
-            lines.append(f"მთავარ სესიაში ქეშში ჩაწერის {s['rebuild_share_main']}% აცილებად თავიდან აწყობაზე მოვიდა "
-                         "(სესიის დაწყება არ ითვლება)")
+            lines.append(f"in the main session {s['rebuild_share_main']}% of cache writes went to avoidable rebuilds "
+                         "(the session start does not count)")
     else:
-        lines.append("„თავიდან აწყობა\" არ ყოფილა")
+        lines.append("no \"rebuilds\"")
     if s["unpriced"]:
-        lines.append(f"ფასი არ აქვს, ამიტომ ჯამში არ შედის: {', '.join(s['unpriced'])} — დაამატე tools/model_prices.toml-ში")
+        lines.append(f"no price, so not in the total: {', '.join(s['unpriced'])} — add it to tools/model_prices.toml")
     if s["prices"]:
-        lines.append(f"ფასები: tools/model_prices.toml — {s['prices']}")
+        lines.append(f"prices: tools/model_prices.toml — {s['prices']}")
     return lines

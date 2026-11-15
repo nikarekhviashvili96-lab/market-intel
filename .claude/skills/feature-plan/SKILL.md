@@ -49,7 +49,7 @@ missing. (`approve.py` refuses a plan on an unapproved spec, and the CHAIN-PLAN 
 3. If orchestration is enabled (`orchestration/config.toml`): after the task's code is ready, run
    `bash .claude/hooks/py.sh orchestration/run.py code-check --plan PLAN-NNNN --task T<n>` (the owner is asked).
    Fix critical/high findings; at most 2 rounds — after that report open findings as UNVERIFIED.
-4. Any change of approach → append a dated line under `## გადახრები` (what and why). A change of scope
+4. Any change of approach → append a dated line under `## გადახრები` (deviations — the heading stays: the guard looks for it) (what and why). A change of scope
    → stop, reopen the plan (status only → draft) and ask the owner.
 5. Done = every task ticked, every gate green, the `verifier` subagent returns `VERDICT: pass`.
    Then set `status: done` and update `plan.md` / `progress.md` (or run `/session-close`), and show the

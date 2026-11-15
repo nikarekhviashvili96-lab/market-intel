@@ -21,7 +21,7 @@ Wired in .claude/settings.json through .claude/hooks/py.sh (hook JSON on stdin):
     I2  hidden characters (Unicode tag block, bidirectional controls) in any output.
   UserPromptSubmit -> sentinel.py prompt
     P1  the owner's message carries a key or token: the prompt is blocked before it reaches the model,
-        and the owner is told, in Georgian, to put it in .env instead.
+        and the owner is told to put it in .env instead.
 
 Every action leaves its marker (SENTINEL[R1] …) in the session transcript, where tools/observe.py
 counts it. Patterns live in tools/redact.py (one list for the sentinel, the report and the drill).
@@ -139,12 +139,12 @@ def cmd_post(payload: dict) -> int:
                 f"SENTINEL[R1]: {len(kinds)} credential(s) ({shown}) were removed from this output before you saw it "
                 f"({src}); the text shows a redaction marker instead. Never ask for, guess or copy the value, and never "
                 "write the marker into a file (guard S2) — if that file must change, edit only the other lines. Tell the "
-                "owner in Georgian that a key was exposed there, so they can move it into .env and rotate it.")
+                "owner, in the owner's language (CLAUDE.md → Language), that a key was exposed there, so they can move it into .env and rotate it.")
         else:
             notes.append(
                 f"SENTINEL[R2]: the output of this failed call ({src}) contains what looks like a credential ({shown}); "
                 "Claude Code lets no hook hide a failed call's output, so it reached you. Do not repeat, store or copy it "
-                "anywhere; tell the owner in Georgian that it appeared there, so they can rotate it.")
+                "anywhere; tell the owner, in the owner's language (CLAUDE.md → Language), that it appeared there, so they can rotate it.")
     text = redact.text_of(cleaned)
     hidden = redact.hidden_chars(text)
     if hidden:
@@ -173,9 +173,9 @@ def cmd_prompt(payload: dict) -> int:
     if not hits:
         return 0
     kinds = ", ".join(sorted({k for k, _, _ in hits}))
-    reason = (f"SENTINEL[P1]: შენს შეტყობინებაში API გასაღები ან ტოკენი ჩანს ({kinds}) — შეტყობინება შევაჩერე და "
-              "მოდელამდე არ მისულა. გასაღები ჩაწერე ფაილში `.env` (ნიმუში — `.env.example`), შეტყობინება კი გაიმეორე "
-              "გასაღების გარეშე. თუ ეს გასაღები სადმე უკვე გაზიარდა, ჯობს სერვისში შეცვალო (rotate).")
+    reason = (f"SENTINEL[P1]: your message contains an API key or token ({kinds}) — the message was stopped and "
+              "never reached the model. Put the key into the file `.env` (example — `.env.example`) and send the message "
+              "again without it. If this key was already shared anywhere, better rotate it at the service.")
     print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
     return 0
 

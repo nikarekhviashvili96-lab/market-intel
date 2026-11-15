@@ -1,7 +1,7 @@
 # AGENTS.md
 
 Instructions for any coding agent (Claude Code loads it through `CLAUDE.md`). The owner does not read
-code: explain every result in plain Georgian, and let a machine check prove it — assurance is not evidence.
+code: explain every result in plain English (CLAUDE.md → Language), and let a machine check prove it — assurance is not evidence.
 
 ## What this project is
 
@@ -22,7 +22,7 @@ rule).
 |---|---|
 | `intent.md` | the owner's goal — root of intent → spec → plan |
 | `plan.md` | roadmap: phases, current phase (auto block), backlog |
-| `progress.md` | "ახლა" (current state, auto block) + session log, newest first |
+| `progress.md` | "ახლა" (now — current state, auto block) + session log, newest first |
 | `process.md` | how we work: the path of every piece of work, who does what, where the owner decides |
 | `tasks/todo.md` | the agent's concrete tasks `D-NNN`: now · next (auto block) · queue · waits for the owner · done |
 | `docs/adr/` | architecture decisions `ADR-NNNN-slug.md` + index README |
@@ -63,7 +63,7 @@ Architectural choices are recorded as ADRs (`proposed`) and decided by the owner
 anything.** An accepted ADR is binding; changing it means a new ADR that supersedes it.
 
 Work of three or more steps goes into `tasks/todo.md` first (`- [ ] D-NNN — what (source) — verify: how`);
-`[x]` only with a receipt `✓ YYYY-MM-DD · <commit | მფლობელი | file>` — the `tasks` gate checks it.
+`[x]` only with a receipt `✓ YYYY-MM-DD · <commit | owner | file>` — the `tasks` gate checks it.
 
 ## Commands
 
@@ -92,7 +92,7 @@ Never:
 - weaken, skip or disable a gate to get a green result.
 
 Always:
-- Georgian for anything the owner or a user reads; identifiers, paths and commands in English;
+- English for anything the owner reads (CLAUDE.md → Language); the product's own text follows intent.md; identifiers, paths and commands in English;
 - one fact in one place (facts → `docs/domain/`, decisions → ADRs, state → `progress.md`), links elsewhere;
 - CHECKPOINT commits on a branch; report what was not verified as not verified.
 

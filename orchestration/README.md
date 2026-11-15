@@ -1,43 +1,43 @@
 ---
 id: orchestration-guide
 type: guide
-title: ორკესტრაცია — maker/checker ციკლები (გამორთულია)
+title: Orchestration — maker/checker loops (off)
 ---
 
-# ორკესტრაცია (maker / checker)
+# Orchestration (maker / checker)
 
-**სურათი:** ერთი მოდელი ქმნის (maker), მეორე ამოწმებს (checker). ერთი და იმავე მოდელის ორჯერ გაშვება „მეორე აზრი" არ არის — ორივეს ერთი და იგივე ბრმა წერტილები აქვს; ამიტომ checker სხვა მოდელია და ახალი კონტექსტიდან იწყებს. გადაწყვეტილება: [[ADR-0005-maker-checker-orchestration]].
+**The picture:** one model makes (maker), another checks (checker). Running the same model twice is not a "second opinion" — both runs share the same blind spots; so the checker is a different model and starts from a fresh context. Decision: [[ADR-0005-maker-checker-orchestration]].
 
-**სტატუსი: ჩადებულია და გამორთულია** (`config.toml` → `enabled = false`). ჩართვა მფლობელის გადაწყვეტილებაა (წინადადება P-001). **ეტაპი 1** (`stage = 1`) — მუშაობს მხოლოდ Claude; სხვა პროვაიდერის მოდელს `run.py` არ გაუშვებს (exit 5, `STAGE GATE`). II ეტაპზე გადასვლა (Fable, ChatGPT-ის checker-ები) მფლობელის ცალკე გადაწყვეტილებაა. დისპეჩერი — decision model, რომელიც გვთავაზობს, რომელ მოდელს გადაეცეს დავალება ([[ADR-0009-decision-model-dispatcher]]) — ჯერ მხოლოდ გადაწყვეტილებაა: ამ შაბლონში მისი კოდი არ არის (P-004).
+**Status: built in and off** (`config.toml` → `enabled = false`). Switching it on is the owner's decision (proposal P-001). **Stage 1** (`stage = 1`) — only Claude works; `run.py` will not run another provider's model (exit 5, `STAGE GATE`). Moving to stage II (Fable, ChatGPT checkers) is a separate decision of the owner. The dispatcher — a decision model that suggests which model gets a task ([[ADR-0009-decision-model-dispatcher]]) — is only a decision so far: its code is not in this template (P-004).
 
-| ციკლი | maker | checker | ბრუნები | რას აბრუნებს |
+| Loop | maker | checker | Rounds | What it returns |
 |---|---|---|---|---|
-| არქიტექტურა — `run.py arch` | Opus 5.5 — წინადადება და ბოლოს სინთეზი | Sonnet 5.5 — აუდიტი და საკუთარი პოზიცია | 1 | ADR-ის პროექტი (`proposed`), მფლობელი წყვეტს `/approve`-ით |
-| კოდი — `run.py code-check` | Sonnet 5.5 (თავად სესია) | Opus 5.5 — diff, სპეციფიკაცია და [[REVIEW]] | მაქს. 2 შემოწმება ერთ ამოცანაზე | `VERDICT: approve / changes-requested / blocked` |
-| რუტინა | Haiku 5.5 — subagent-ები (`model: haiku`) | დეტერმინისტული gate-ები | — | — |
+| Architecture — `run.py arch` | Opus 5.5 — the proposal and, at the end, the synthesis | Sonnet 5.5 — an audit and its own position | 1 | a draft ADR (`proposed`); the owner decides with `/approve` |
+| Code — `run.py code-check` | Sonnet 5.5 (the session itself) | Opus 5.5 — the diff, the specification and [[REVIEW]] | at most 2 reviews per task | `VERDICT: approve / changes-requested / blocked` |
+| Routine | Haiku 5.5 — subagents (`model: haiku`) | deterministic gates | — | — |
 
-ყოველი მოდელი `config.toml`-ში იწერება ფორმით `პროვაიდერი:მოდელი` (მაგ. `claude:claude-opus-5-5`), ამიტომ მოდელის შეცვლა ერთი ხაზის ცვლილებაა.
+Every model is written in `config.toml` as `provider:model` (e.g. `claude:claude-opus-5-5`), so changing a model is a one-line change.
 
-## ბრძანებები
+## Commands
 
 ```bash
-bash .claude/hooks/py.sh orchestration/run.py status          # რა მდგომარეობაშია (ასევე /orchestrate)
-bash .claude/hooks/py.sh orchestration/run.py arch --topic "რომელი არხით დავიწყოთ?" --dry-run
+bash .claude/hooks/py.sh orchestration/run.py status          # what state it is in (also /orchestrate)
+bash .claude/hooks/py.sh orchestration/run.py arch --topic "Which channel do we start with?" --dry-run
 bash .claude/hooks/py.sh orchestration/run.py code-check --plan PLAN-0001 --task T3 --dry-run
-bash .claude/hooks/py.sh orchestration/run.py code-check --plan PLAN-0001 --task T3 --response notes/T3-reply.md --dry-run   # მე-2 ბრუნი
+bash .claude/hooks/py.sh orchestration/run.py code-check --plan PLAN-0001 --task T3 --response notes/T3-reply.md --dry-run   # round 2
 ```
 
-`--dry-run` არცერთ მოდელს არ იძახებს და არაფერს წერს — აჩვენებს, რა გაეშვებოდა. ნამდვილი გაშვება (ჩართვის შემდეგ) ყოველ ჯერზე მფლობელს ეკითხება (permissions: ask).
+`--dry-run` calls no model and writes nothing — it shows what would run. A real run (once switched on) asks the owner every time (permissions: ask).
 
-## როგორ მუშაობს
+## How it works
 
-- **Claude-ის ნაბიჯი:** `claude -p --restricted` მხოლოდ კითხვის ინსტრუმენტებით (`Read, Grep, Glob`), ერთ გამოძახებაზე ხარჯის ზღვრით (`max_budget_usd`). `--restricted` პროექტის პარამეტრებს არ კითხულობს, ამიტომ `run.py` საიდუმლო ფაილების `Read` deny წესებს `--settings`-ით თავიდან გადასცემს — პროექტისას და იმავე სახის ფაილებს ნებისმიერ ქვესაქაღალდეში (`**/.env.*`, `**/*.pem`, …); ჩადგმულ პროცესს კი სხვა სერვისების გასაღებებს არ ატანს (`tools/claude_cli.py`). prompt-ები და პასუხები `tools/redact.py`-ზე გადის — გასაღები ჩანაწერში არ რჩება.
-- **საიდუმლო ფაილი prompt-ში არ ხვდება:** `--context` მას არ მიიღებს (exit 5, `CONTEXT`), შესამოწმებელ diff-ს კი ასეთი ფაილები აკლია — checker მხოლოდ მათ სახელებს ხედავს. რომელი ფაილია საიდუმლო, ერთი ცხრილი წყვეტს (`run.py`, `SECRET_KINDS`) — იგივე, საიდანაც ჩადგმული გამოძახების deny წესებია აგებული; ამიტომ `.env.example`-იც გარეთ რჩება (ჩადგმული სესია მას ვერც წაიკითხავდა). ჩადგმულ სესიას `--restricted` პროექტის საქაღალდის გარეთ ფაილს არ აკითხებს (2026-10-18-ს გაზომილი).
-- **გარედან მოსული ტექსტი მონაცემია:** თემა, გეგმა, diff და წინა მოდელის პასუხი prompt-ში ორ ნიშანს შორის ჩადის, რომლებშიც ამ prompt-ისთვის შერჩეული შემთხვევითი სიტყვაა; ტექსტი, რომელიც ამ სიტყვის ცოდნის გარეშე დაიწერა, ბლოკს ვერ დახურავს და ინსტრუქციად ვერ მოეჩვენება მოდელს.
-- **II ეტაპი (ჯერ არა):** ChatGPT — `codex exec -s read-only` (Codex CLI), ავტორიზაცია `codex login`-ით, API გასაღების გარეშე. კოდში მზადაა, მაგრამ `stage = 1`-ზე ეს გზა დაკეტილია.
-- **ჩანაწერები:** `orchestration/runs/<თარიღი>-<ციკლი>-…-<დრო>/` — ყოველ გაშვებას საკუთარი საქაღალდე აქვს: prompt-ები, პასუხები, `meta.json` (ეტაპი, მოდელები, თითო ნაბიჯის ფასი — ჩავარდნილისაც, და ჩავარდნილი ნაბიჯის შეცდომის ტექსტი, redacted) და `nested-settings.json` (deny წესები, რომლებიც ჩადგმულმა გამოძახებამ მიიღო). ჩავარდნის მიზეზს ეკრანზე `run.py` საკუთარი სიტყვებით ამბობს: ნაბიჯის შეცდომის ტექსტში შეიძლება diff-იდან ან წაკითხული ფაილიდან მოსული ტექსტი იყოს. ბრუნების ლიმიტი ამ ჩანაწერებიდან ითვლება, ამიტომ სესიებს შორისაც მოქმედებს. ჩავარდნილი გაშვება ბრუნს არ ხარჯავს და მისი ჩანაწერი რჩება — ისიც, როცა checker-ის ბოლო ხაზი `VERDICT:` / `POSITION:` არ არის.
-- **მეორე ბრუნს პირველი ახსოვს:** მე-2 ბრუნიდან კოდის checker-ი prompt-ში ხედავს თავის წინა მიმოხილვას (ბოლო დასრულებული ბრუნის `review.md`) და maker-ის პასუხს მასზე — ფაილს, რომელსაც `--response` ასახელებს: თითო შენიშვნაზე „გასწორდა" ან „უარყოფილია, იმიტომ რომ…". checker-ი ჯერ ყოველ წინა შენიშვნას ერთი ხაზით აფასებს (`PREVIOUS <n>: resolved | open | rejected-accepted | disputed`) და უარყოფილს თავიდან მხოლოდ ახალი მტკიცებულებით აყენებს — ასე გასწორება პასუხს ხვდება და არა ახალ მოთხოვნებს. თუ დასრულებული ბრუნის `review.md` აღარ არსებობს, ციკლი ჩერდება (exit 5, `PREVIOUS REVIEW`): ნულიდან შეფასება არ ხდება. `--response` არ მიიღება პირველ ბრუნში, პროექტის გარეთ არსებულ ფაილზე და საიდუმლო ფაილზე (exit 5, `RESPONSE`). რომელ ჩანაწერს უპასუხა ბრუნმა, `meta.json`-ის `previous_run` ამბობს. ამას დრილი ამოწმებს (`tools/gates/drill.py`, orchestration ჯგუფი); `PREVIOUS …` ხაზების სისრულეს კი მანქანა ჯერ არ ამოწმებს — ეს მოდელის პასუხზეა დამოკიდებული.
-- **prompt-ები:** `prompts/` — maker, checker, სინთეზი, კოდის checker. checker-ები [[REVIEW]]-ის სიმძიმის სკალასა და ფორმატს იყენებენ.
-- **კარიბჭეები ციკლზე მაღლა დგას:** checker-ის „approve" ჩავარდნილ gate-ს ვერ გადაფარავს ([[ADR-0006-deterministic-gates-and-evals]]).
+- **Claude's step:** `claude -p --restricted` with read-only tools only (`Read, Grep, Glob`), with a cost ceiling per call (`max_budget_usd`). `--restricted` does not read the project's settings, so `run.py` passes the `Read` deny rules for secret files again through `--settings` — the project's own and files of the same kind in any subfolder (`**/.env.*`, `**/*.pem`, …); and it does not hand the nested process the keys of other services (`tools/claude_cli.py`). Prompts and answers go through `tools/redact.py` — no key stays in the record.
+- **A secret file never reaches a prompt:** `--context` will not take one (exit 5, `CONTEXT`), and the diff under review leaves such files out — the checker sees only their names. One table decides which file is secret (`run.py`, `SECRET_KINDS`) — the same one the nested call's deny rules are built from; so `.env.example` stays out too (the nested session could not read it anyway). With `--restricted` the nested session does not read a file outside the project folder (measured on 2026-10-18).
+- **Text from outside is data:** the topic, the plan, the diff and the previous model's answer go into the prompt between two marks that carry a random word chosen for that prompt; text written without knowing that word cannot close the block and cannot pass for an instruction to the model.
+- **Stage II (not yet):** ChatGPT — `codex exec -s read-only` (Codex CLI), signed in with `codex login`, without an API key. It is ready in the code, but at `stage = 1` that path is closed.
+- **Records:** `orchestration/runs/<date>-<loop>-…-<time>/` — every run has its own folder: the prompts, the answers, `meta.json` (the stage, the models, each step's price — a failed one's too, and a failed step's error text, redacted) and `nested-settings.json` (the deny rules the nested call received). On screen `run.py` gives the reason for a failure in its own words: a step's error text may hold text that came from the diff or from a file it read. The round limit is counted from these records, so it holds across sessions too. A failed run spends no round and its record stays — also when the checker's last line is not `VERDICT:` / `POSITION:`.
+- **The second round remembers the first:** from round 2 the code checker sees in its prompt its own previous review (the last finished round's `review.md`) and the maker's answer to it — the file `--response` names: per finding "fixed" or "rejected, because…". The checker first rates every previous finding in one line (`PREVIOUS <n>: resolved | open | rejected-accepted | disputed`) and raises a rejected one again only with new evidence — so a fix meets an answer, not new demands. If the finished round's `review.md` no longer exists, the loop stops (exit 5, `PREVIOUS REVIEW`): there is no rating from scratch. `--response` is not accepted in the first round, for a file outside the project or for a secret file (exit 5, `RESPONSE`). Which record a round answered is said by `previous_run` in `meta.json`. The drill checks this (`tools/gates/drill.py`, the orchestration group); the completeness of the `PREVIOUS …` lines is not machine-checked yet — it depends on the model's answer.
+- **Prompts:** `prompts/` — maker, checker, synthesis, code checker. The checkers use [[REVIEW]]'s severity scale and format.
+- **Gates stand above the loop:** a checker's "approve" cannot override a failing gate ([[ADR-0006-deterministic-gates-and-evals]]).
 
-**exit კოდები (`run.py`):** `0` წარმატება · `1` ნაბიჯი ჩავარდა (ან `GIT ERROR`, `RUNS`) · `3` გამორთულია · `4` ბრუნების ლიმიტი ამოიწურა · `5` არასწორი შეყვანა ან config — შეტყობინება ყოველთვის თავისი ნიშნით იწყება: `CONFIG`, `STAGE GATE`, `MODEL SPEC`, `TOOLS`, `BUDGET CONFIG`, `LIMITS`, `SANDBOX`, `DENY RULES`, `TEMPLATE`, `ORCH_CLAUDE_CMD`, `TOPIC`, `CONTEXT`, `PLAN`, `BAD TASK`, `BAD BASE`, `NO DIFF`, `REVIEW CONTRACT`, `PREVIOUS REVIEW`, `RESPONSE`.
+**Exit codes (`run.py`):** `0` success · `1` a step failed (or `GIT ERROR`, `RUNS`) · `3` off · `4` the round limit is used up · `5` wrong input or config — the message always starts with its own mark: `CONFIG`, `STAGE GATE`, `MODEL SPEC`, `TOOLS`, `BUDGET CONFIG`, `LIMITS`, `SANDBOX`, `DENY RULES`, `TEMPLATE`, `ORCH_CLAUDE_CMD`, `TOPIC`, `CONTEXT`, `PLAN`, `BAD TASK`, `BAD BASE`, `NO DIFF`, `REVIEW CONTRACT`, `PREVIOUS REVIEW`, `RESPONSE`.

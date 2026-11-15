@@ -8,7 +8,7 @@
 The person runs no setup: on the first session start `.claude/hooks/firstrun.py` makes the folder a git repository
 and switches on the commit checks by itself. A message that describes something to build — a website, a game, an
 agent, an automation, anything — IS the start: run `/intent`, write the idea into intent.md §1 at once in the
-person's own words (source **მფლობელი**, with the date) and begin the interview with one question. Never ask them to
+person's own words (source **owner**, with the date) and begin the interview with one question. Never ask them to
 read the README, run a setup step or approve the engine's ADRs (`scope: engine`).
 The stages are the loop (ADR-0001, ADR-0013; `plan.md` F1–F6): 1 intent → 2 spec → 3 architecture ADR → 4 plan and
 build → 5 show and pilot → 6 run and observe. The brief's stage block says where the project stands and what comes
@@ -16,7 +16,7 @@ next; follow it and tell the person the next step in plain words, the command ex
 
 ### Working memory arrives by itself
 At every session start and after every compaction, the SessionStart hooks inject: the project's stage and next
-step, progress.md "ახლა", plan.md's current phase, tasks/todo.md "now / next", this session's episode path, the last
+step, progress.md "ახლა" (now), plan.md's current phase, tasks/todo.md "now / next", this session's episode path, the last
 closed session, open proposals, sessions that need reconciling, the compaction count, and the context-graph brief
 (errors + what waits for the owner). Start from it — do not re-derive it. If the brief shows graph errors, fix them
 first.
@@ -24,8 +24,8 @@ first.
 Claude Code compacts the conversation by itself when the context fills. The status line shows `↻N` = compactions in this
 session; at 3 it turns red — a summary of a summary is no longer reliable memory: run `/session-close`,
 then recommend a new terminal or `/clear`. The same status line (`.claude/hooks/statusline.py`, ADR-0010) keeps
-the owner's own line and adds the project's stage (`🧭 ეტაპი N/6 · … → next command`, ADR-0011) and the prompt cache —
-`♻ … თბილია ~HH:MM-მდე`, `იწურება`, `❄ ცივია`. Cold with a large context means the next message rewrites the whole
+the owner's own line and adds the project's stage (`🧭 Stage N/6 · … → next command`, ADR-0011) and the prompt cache —
+`♻ cache warm until ~HH:MM`, `cache expires at`, `❄ cache cold`. Cold with a large context means the next message rewrites the whole
 conversation: for a new topic recommend `/session-close` and a new session.
 
 ### Project skills
@@ -36,7 +36,7 @@ conversation: for a new topic recommend `/session-close` and a new session.
 | `/spec` | a feature must be defined (needs an accepted intent) |
 | `/feature-plan` | an approved spec needs a plan, or an approved plan is being executed |
 | `/adr` | a hard-to-reverse or cross-cutting decision is being made |
-| `/session-close` | the session ends ("დავასრულოთ"), before `/clear`, or at ↻3 |
+| `/session-close` | the session ends ("let's wrap up", "დავასრულოთ"), before `/clear`, or at ↻3 |
 | `/observatory` | the owner asks what the agents did, wants an audit or the security events |
 | `/reflect` | every few sessions, or after a repeated mistake — proposes improvements |
 | `/approve` | **owner only** — you cannot invoke it; remind the owner of the exact command |
@@ -69,20 +69,21 @@ as Sonnet at ~1/8 of the cost); Sonnet for long summaries, judgement and anythin
 carry their own `model:` line: Opus for the correctness and security lenses; Sonnet for the quality lens, the refuter
 and the spec reviewer; Haiku for the verifier, which only runs the gates and compares their lines with the claims.
 
-### Language (owner's decision, 2026-11-15 — overrides the Georgian rules below and in AGENTS.md)
+### Language (owner's decision, 2026-11-15 — overrides any Georgian rule elsewhere)
+- Think, write and respond in English.
 - Respond to the owner in English.
 - All new documents, commit messages and PR titles/descriptions are written in English.
-- Do not translate `intent.md`: it stays as the owner approved it. Existing Georgian files are not rewritten
-  just to change their language.
+- What the agent reads or gets injected — hooks, tools, skills, templates, prompts, rules — is English. Do not
+  translate `intent.md`: it stays as the owner approved it; `docs/` and `memory/` keep their language and are not
+  rewritten just to change it. Georgian markers the code parses (e.g. `## გადახრები`, "ახლა") stay as they are.
 - The language of text the product shows its users is a product decision (intent.md / the spec), not this rule.
 
 ### Talking to the owner
-English (see Language above), connected prose, simple words; gloss a technical term the first time (e.g. „gate (მანქანური
-შემოწმება)"). Show results, not promises; say plainly what was not verified.
-Georgian quality — the engine carries its own rule and never leans on anyone's global setup: correct cases
-(ბრუნვები) and subject–verb agreement; no calque from English („მოდი შევამოწმო" → „ერთი წამი, ვამოწმებ";
-„მე ამას გავაკეთებ" → „ახლა გავაკეთებ"); English only for a term Georgian has no natural word for; re-read every
-Georgian answer once before sending. Georgian a person reads comes from Sonnet-class or better, never Haiku (L-006).
+English (see Language above), connected prose, simple words; gloss a technical term the first time (e.g. "gate (an automatic
+machine check)"). Show results, not promises; say plainly what was not verified.
+If the product ever shows its users Georgian text (intent.md says it does not), that text needs correct
+grammatical cases and agreement, no calques from English, and a re-read before it ships; Georgian a person reads
+comes from a Sonnet-class model or better, never Haiku (L-006).
 
 ## Lessons (curated, always loaded)
 

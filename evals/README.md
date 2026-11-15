@@ -1,52 +1,52 @@
 ---
 id: evals-guide
 type: guide
-title: შეფასებები (evals) — როგორ გავზომავთ აგენტის ქცევას
+title: Evals — how we will measure the agent's behaviour
 ---
 
-# შეფასებები (evals)
+# Evals
 
-ტესტი ამოწმებს, რომ კოდი სწორად მუშაობს; **eval** ამოწმებს, რომ აგენტი სწორად **პასუხობს** — ქართულად, ფაქტებზე დაყრდნობით, წესების დაცვით. აგენტი ჯერ არ არსებობს, ამიტომ ეს საქაღალდე ჯერ მხოლოდ გეგმაა; evals ჩაირთვება დონე 2-ის კარიბჭეებად ([[ADR-0006-deterministic-gates-and-evals]], `tools/gates/gates.toml`: `evals-georgian`, `evals-grounding`). პირველი ნაკრები პირველი სპეციფიკაციის მიღების კრიტერიუმებიდან იწერება — ყოველ კრიტერიუმს, რომელიც ქცევას ეხება, ნაკრებში თავისი შემთხვევა აქვს.
+A test checks that the code works correctly; an **eval** checks that the agent **answers** correctly — in its language, grounded in facts, keeping the rules. The agent does not exist yet, so this folder is only a plan for now; evals switch on as the level-2 gates ([[ADR-0006-deterministic-gates-and-evals]], `tools/gates/gates.toml`: `evals-georgian`, `evals-grounding`). The first set is written from the first specification's acceptance criteria — every criterion about behaviour has its own case in the set.
 
-## რა ვიცით უკვე (ძრავის ავტორის გაზომვა, 2026-09-16)
+## What we already know (the engine author's measurement, 2026-09-16)
 
-ქართული ენის ოთხი მოდელი 120 დიალოგზე გაიზომა, ორი დამოუკიდებელი შემფასებელი მოდელით: GPT-5.5 — ქართულში საუკეთესო (4.9/5); Sonnet 5 — კარგი (4.3), მაგრამ პასუხების 26%-ში უსაფუძვლო დეტალს ამატებს; **Haiku 4.5 — ქართული ტექსტისთვის უვარგისი (2.6/5)**; ქართული ტექსტი ინგლისურზე 1.5–2-ჯერ მეტ ტოკენს ხარჯავს. ნაკრები და სკრიპტები სხვა პროექტისთვის აიგო და ძრავში არ შედის; მეთოდი კი ასეთია: `runner.py` (მოდელების გაშვება `claude -p`, `codex exec`, Ollama-თი) → `score.py` (დეტერმინისტული შემოწმება) → `judge.py` (ორი სხვადასხვა ოჯახის შემფასებელი, ბრმად) → `judge_agg.py` — და პირველი eval-ის გეგმისას ამავე ფორმით იწერება. ეს ქულები ჰოლისტიკურია — ერთი რიცხვი 1-დან 5-მდე მთელ პასუხზე; ასეთი ქულა კონკრეტულ შეცდომას მალავს (ქვემოთ), ამიტომ ახალი ნაკრები მას აღარ იყენებს.
+Four models were measured for Georgian on 120 dialogues, with two independent judge models: GPT-5.5 — best in Georgian (4.9/5); Sonnet 5 — good (4.3), but in 26% of answers it adds an unfounded detail; **Haiku 4.5 — unfit for Georgian text (2.6/5)**; Georgian text spends 1.5–2 times more tokens than English. The set and the scripts were built for another project and are not part of the engine; the method is this: `runner.py` (running the models with `claude -p`, `codex exec`, Ollama) → `score.py` (deterministic checks) → `judge.py` (two judges from different families, blind) → `judge_agg.py` — and the first eval's plan is written in the same form. These scores are holistic — one number from 1 to 5 for a whole answer; such a score hides a specific error (below), so a new set no longer uses it.
 
-## ზღვრები (დაწევა აკრძალულია)
+## Thresholds (lowering them is forbidden)
 
-| Suite | რას ამოწმებს | ზღვარი |
+| Suite | What it checks | Threshold |
 |---|---|---|
-| georgian | ფაქტების სისწორე (დეტერმინისტული), თავდასხმებისადმი მდგრადობა, ენის შეცდომები — თითო ტიპზე კი/არა კითხვა ციტატით (შემფასებელი მოდელი, მფლობელის მონიშვნებთან გაზომილი) | deterministic ≥95%, adversarial ≥95%; ენის შეცდომის თითო ტიპი — პასუხების ≥95% მისგან თავისუფალია (სპეციფიკაციას შეუძლია გაამკაცროს) |
-| grounding | დომენის ურღვევი წესები ([[REVIEW]]) და ის, რომ ყოველ ფაქტობრივ მტკიცებას წყარო ჰქონდეს | 0 დარღვევა |
+| georgian | factual correctness (deterministic), resistance to attacks, language errors — a yes/no question with a quote per type (a judge model, measured against the owner's labels) | deterministic ≥95%, adversarial ≥95%; each language-error type — ≥95% of answers are free of it (a specification may make it stricter) |
+| grounding | the domain's invariants ([[REVIEW]]) and that every factual claim has a source | 0 violations |
 
-## როგორ ვზომავთ ისე, რომ ციფრმა არ მოგვატყუოს
+## Measuring so that the number does not fool us
 
-ეს წესები სამი სტატიის ანალიზიდან მოდის (რიცხვები მეორადი წყაროდანაა, L-012) და ყოველ ახალ ნაკრებს ეხება:
+These rules come from an analysis of three articles (the numbers are from a secondary source, L-012) and apply to every new set:
 
-- **ჯერ შეცდომების ანალიზი.** ახალი ნაკრები ნამდვილი პასუხების კითხვით იწყება: 30–100 პასუხზე თავისუფალი სიტყვებით წერ, რა არის ცუდად, მერე მსგავსებს აჯგუფებ. ჯგუფები შეცდომის ტიპები ხდება, თითოს — თავისი შემოწმება. რასაც ნამდვილ პასუხებში ვერ ნახავ, იმის საზომს წინასწარ არ იგონებ.
-- **კი/არა კითხვა ციტატით, არა ქულა.** შემფასებელი მოდელი (judge — მოდელი, რომელიც სხვა მოდელის პასუხს აფასებს) თითო ტიპზე ერთ კითხვას პასუხობს — „არის აქ ბრუნვის შეცდომა?“, „კალკი?“, „გამოგონილი სიტყვა?“ — და „კი“-ს ციტატით ამტკიცებს. ციტატას კოდი პასუხში ეძებს: ვერ იპოვა — შეფასება არ ითვლება (ისევე, როგორც [[REVIEW]]-ის მიგნება მისამართის გარეშე). მიზეზი გაზომილია: ჩადებული შეცდომების ნაკრებზე ჰოლისტიკურმა ქულამ 5.0 აჩვენა, კითხვებმა — 1.57.
-- **შემფასებელი ჯერ თავად იზომება.** მფლობელი 30–50 პასუხს თავად მონიშნავს (კი/არა თითო ტიპზე); შემფასებლის თანხმობა და kappa (თანხმობა, რომელსაც შემთხვევითი დამთხვევა აკლდება) ≥0.6 — gate-ად გამოსაყენებლად, ≥0.8 — მფლობელის შემოწმების გარეშე. 0.6-ზე ქვემოთ შემფასებელი მხოლოდ მრჩეველია: ენის ნაწილი INCONCLUSIVE-ია (exit 2), არასდროს PASS. სტატიის შემფასებელს kappa 0.15 ჰქონდა — 26 შეცდომიდან 10 დაიჭირა.
-- **dev და test.** ნაკრები ორად იყოფა: dev — მასზე ასწორებ ინსტრუქციას, ხელსაწყოებსა და შემფასებლის კითხვებს; test — მხოლოდ ზომავ (სტატიის ზომები: ~20 და ~60). test-ზე მორგებული ცვლილება ციფრს ზრდის, ხარისხს — არა. პირველი ვერსიის 10+3 კითხვა მთლიანად test-ია; ჩავარდნის მიზეზს dev-ის ახალ, მსგავს შემთხვევაზე იკვლევ.
-- **გამოვლენის ზღვარი და წყვილური შედარება.** 60 შემთხვევაზე ორ ვერსიას შორის ~12 პუნქტზე ნაკლები სხვაობა ხმაურია (სტატიის შეფასება; მარტივი გამოთვლა 90%-იან დონეზე ~11-ს იძლევა) — ასეთ სხვაობას გაუმჯობესებას ვერ დაარქმევ. ორ ვერსიას ერთსა და იმავე შემთხვევებზე წყვილურად ადარებ: რომელი გამოსწორდა და რომელი გაფუჭდა (McNemar-ის ტესტი — წყვილური შედარების სტატისტიკური შემოწმება); სტატიაში „უკეთესმა“ ვერსიამ შემთხვევების 14% გააფუჭა, საშუალო კი ამას მალავდა.
-- **აგენტზე pass^k.** ერთი და იგივე დავალება k-ჯერ (მაგ. 3-ჯერ) ეშვება; pass^k არის დავალებების წილი, რომლებიც ყველა ჯერზე გავიდა (სანდოობა), და არა „ერთხელ მაინც“. სტატიაში pass^3 = 0.75: ყოველი მეოთხე დავალება ერთხელ მაინც ჩავარდა.
-- **აგენტის შემფასებელი ქმედებას ხედავს.** სადაც აგენტის შედეგს მანქანა ვერ ამოწმებს და მოდელი აფასებს, მას ხელსაწყოების გამოძახებები და საბოლოო მდგომარეობა გადაეცემა, არა მხოლოდ საუბარი: მხოლოდ საუბრის მნახველი შემფასებელი მონეტაზე უკეთესი არ იყო (AUC 0.49), გამოძახებებით — 0.73 (AUC — რამდენად კარგად არჩევს კარგს ცუდისგან: 0.5 — მონეტა, 1.0 — უტყუარი).
+- **Error analysis first.** A new set starts by reading real answers: on 30–100 answers you write in free words what is wrong, then group the similar ones. The groups become error types, each with its own check. You do not invent in advance a measure for what you cannot find in real answers.
+- **A yes/no question with a quote, not a score.** The judge model (a model that rates another model's answer) answers one question per type — "is there a grammatical-case error here?", "a calque?", "an invented word?" — and backs a "yes" with a quote. Code looks for the quote in the answer: if it is not found, the rating does not count (just like a [[REVIEW]] finding without a location). The reason is measured: on a set with seeded errors the holistic score showed 5.0, the questions — 1.57.
+- **The judge is measured first.** The owner labels 30–50 answers themselves (yes/no per type); the judge's agreement and kappa (agreement minus what chance alone would give) ≥0.6 — to be used as a gate, ≥0.8 — without the owner's check. Below 0.6 the judge is only advisory: the language part is INCONCLUSIVE (exit 2), never PASS. The article's judge had kappa 0.15 — it caught 10 of 26 errors.
+- **dev and test.** The set is split in two: dev — on it you tune the instruction, the tools and the judge's questions; test — you only measure (the article's sizes: ~20 and ~60). A change fitted to test raises the number, not the quality. The first version's 10+3 questions are all test; you study the cause of a failure on a new, similar dev case.
+- **Detection threshold and pairwise comparison.** On 60 cases a difference of under ~12 points between two versions is noise (the article's estimate; a simple calculation at the 90% level gives ~11) — you cannot call such a difference an improvement. You compare two versions pairwise on the same cases: which got fixed and which got broken (McNemar's test — a statistical check for paired comparisons); in the article the "better" version broke 14% of the cases, and the average hid it.
+- **pass^k for an agent.** The same task runs k times (e.g. 3 times); pass^k is the share of tasks that passed every time (reliability), not "at least once". In the article pass^3 = 0.75: every fourth task failed at least once.
+- **An agent's judge sees the actions.** Where the machine cannot check an agent's result and a model rates it, it is given the tool calls and the final state, not only the conversation: a judge that saw only the conversation was no better than a coin (AUC 0.49), with the calls — 0.73 (AUC — how well it tells good from bad: 0.5 — a coin, 1.0 — infallible).
 
-## აგენტის ქცევის შეფასება — ხელსაწყოიანი და მრავალნაბიჯიანი აგენტი
+## Rating an agent's behaviour — an agent with tools and several steps
 
-ზემოთ ორი suite დოკუმენტზე-პასუხის აგენტისაა. როცა აგენტი ხელსაწყოს იყენებს ან რამდენიმე ნაბიჯს დგამს (აგენტის სახელმძღვანელოს Q1 ბ), შეფასებას ემატება ქცევის ოთხი განზომილება — თითო სპეციფიკაცია თავისი ამოცანიდან ირჩევს და ზღვარსაც თავად ადგენს (georgian/grounding-ისგან განსხვავებით, სადაც ზღვარი ფიქსირებულია):
+The two suites above are for a document-answering agent. When an agent uses a tool or takes several steps (the agent guide's Q1 b), four dimensions of behaviour are added — each specification picks from its own task and sets the threshold itself (unlike georgian/grounding, where the threshold is fixed):
 
-- **დავალების წარმატება** (task success) — ნიმუში დავალებების ნაკრებზე შესრულდა თუ არა მიზანი; დეტერმინისტულად მოწმდება საბოლოო მდგომარეობა ან შედეგი, არა მოდელის თვითშეფასება.
-- **ხელსაწყოს გამოძახების სისწორე** (tool-call correctness) — სწორი ხელსაწყო დაშვებული სიიდან, სწორი არგუმენტებით; აკრძალული ან არასწორი გამოძახება ჩავარდნაა (ეს უსაფრთხოებასაც ეხება — [[REVIEW]]).
-- **ტრაექტორია** (trajectory) — ნაბიჯების თანმიმდევრობა გონივრულია, ციკლის ნაბიჯების ზღვარს არ არღვევს და ზედმეტ, უშედეგო ნაბიჯს არ დგამს.
-- **ხარჯი თითო დავალებაზე** (cost per task) — ტოკენი და ფასი დადგენილ ზღვარს ქვემოთ (პასუხის `usage` ველიდან).
+- **Task success** — on a set of sample tasks, whether the goal was reached; the final state or the result is checked deterministically, not the model's self-assessment.
+- **Tool-call correctness** — the right tool from the allowed list, with the right arguments; a forbidden or wrong call is a failure (this is also about security — [[REVIEW]]).
+- **Trajectory** — the order of steps is sensible, does not break the loop's step limit and takes no extra, fruitless step.
+- **Cost per task** — tokens and price under a set threshold (from the answer's `usage` field).
 
-**ხელსაწყოს არჩევის შემთხვევები.** ხელსაწყოს გამოძახების სისწორე სამი სახის შემთხვევით იზომება: (1) კითხვა, რომელსაც კონკრეტული ხელსაწყო სჭირდება — გამოძახებულია სწორი, სწორი არგუმენტებით; (2) კითხვა, რომელსაც ხელსაწყო არ სჭირდება (მისალმება, პასუხი უკვე მასალაშია) — არცერთი გამოძახება; (3) ორი მსგავსი ხელსაწყო (მაგ. „ნახვა“ და „დაჯავშნა“) — არჩეულია ის, რომელსაც კითხვა ითხოვს. სამივე დეტერმინისტულად მოწმდება, ხელსაწყოს გამოძახების ჟურნალიდან. ჩავარდნა ჯერ ხელსაწყოს აღწერას ასწორებს — „როდის იძახებ და როდის — არა“ (`docs/guides/agent.md` §3) — და მხოლოდ მერე ინსტრუქციას.
+**Tool-choice cases.** Tool-call correctness is measured with three kinds of cases: (1) a question that needs a specific tool — the right one is called, with the right arguments; (2) a question that needs no tool (a greeting, the answer is already in the material) — no call at all; (3) two similar tools (e.g. "view" and "book") — the one the question asks for is chosen. All three are checked deterministically, from the tool-call log. A failure first fixes the tool's description — "when you call it and when you do not" (`docs/guides/agent.md` §3) — and only then the instruction.
 
-დეტერმინისტული შემოწმება პირველია (საბოლოო მდგომარეობა, ხელსაწყოს გამოძახების ჟურნალი, ტოკენის ჯამი); შემფასებელი მოდელი მხოლოდ იქ, სადაც მანქანა ვერ ამოწმებს (ენის ხარისხი, ზოგჯერ დავალების წარმატება), და მაშინაც ორი სხვადასხვა ოჯახის მოდელი. ყოველ ცვლილებაზე ნაკრები თავიდან ეშვება და ძველ შედეგს წყვილურად ედარება.
+Deterministic checking comes first (the final state, the tool-call log, the token total); a judge model only where the machine cannot check (language quality, sometimes task success), and even then two models from different families. On every change the set runs again and is compared pairwise with the old result.
 
-## პრინციპები
+## Principles
 
-- ყოველი prompt-ის ან მოდელის ცვლილება → ხელახლა ეშვება მთელი ნაკრები; შედეგი ინახება და ძველს წყვილურად ედარება.
-- gate ქვედა ზღვარია და არა მიზანი: მისი გავლა „საკმარისად კარგს“ არ ნიშნავს — ციფრთან ერთად ყოველთვის ჩანს, რამდენ შემთხვევაზე გაიზომა და შემფასებლის kappa რა იყო.
-- დეტერმინისტული შემოწმება (სტრიქონი, რიცხვი, ინსტრუმენტის გამოძახება) ყოველთვის პირველია; შემფასებელი მოდელი — მხოლოდ იქ, სადაც სხვაგვარად შეუძლებელია (ენის ხარისხი), და მაშინაც ორი სხვადასხვა ოჯახის მოდელი.
-- ახალი ჩავარდნა რეალური გამოყენებიდან → ახალი შემთხვევა ნაკრებში (რეგრესია აღარ განმეორდება).
+- Every prompt or model change → the whole set runs again; the result is kept and compared pairwise with the old one.
+- A gate is a floor, not a goal: passing it does not mean "good enough" — next to the number it always shows how many cases it was measured on and what the judge's kappa was.
+- Deterministic checking (a string, a number, a tool call) always comes first; a judge model only where nothing else is possible (language quality), and even then two models from different families.
+- A new failure from real use → a new case in the set (the regression does not happen again).

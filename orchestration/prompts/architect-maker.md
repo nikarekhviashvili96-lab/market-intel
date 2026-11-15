@@ -12,16 +12,16 @@ READ FIRST (read-only tools; accepted ADRs are binding, proposed ones are not ye
 Write a decision proposal in Georgian (identifiers, file paths, product and model names in English)
 with exactly these sections:
 
-1. კონტექსტი — the problem and the facts it rests on, each fact cited to the file you read it in.
-2. გადაწყვეტილების დრაივერები — what matters, tied to intent goals (G1…) and principles (P1…).
-3. ალტერნატივები — at least three real options; for each: how it works, pros, cons, cost,
+1. Context — the problem and the facts it rests on, each fact cited to the file you read it in.
+2. Decision drivers — what matters, tied to intent goals (G1…) and principles (P1…).
+3. Alternatives — at least three real options; for each: how it works, pros, cons, cost,
    reversibility, and what it would take to verify it.
-4. რეკომენდაცია — one option, and why it beats the others on the drivers.
-5. შედეგები — what gets easier, what gets harder, what it locks in.
-6. რისკები — each with a mitigation.
-7. დადასტურება — how we will know it works; prefer a machine check (gate, eval, test) over opinion.
-8. ღია კითხვები მფლობელისთვის — only what the owner must answer.
+4. Recommendation — one option, and why it beats the others on the drivers.
+5. Consequences — what gets easier, what gets harder, what it locks in.
+6. Risks — each with a mitigation.
+7. Verification — how we will know it works; prefer a machine check (gate, eval, test) over opinion.
+8. Open questions for the owner — only what the owner must answer.
 
-Rules: do not invent facts about the domain — if a fact is not in the files, mark it „ჰიპოთეზა";
+Rules: do not invent facts about the domain — if a fact is not in the files, mark it "hypothesis";
 stay inside the non-goals of intent.md; do not contradict an accepted ADR without saying so
 explicitly and proposing to supersede it; no code.
