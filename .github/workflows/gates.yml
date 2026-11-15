@@ -46,6 +46,8 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: ingest/requirements.txt
       - name: The launcher finds a Python by itself
         shell: bash
         run: bash .claude/hooks/py.sh -c "import sys; print(sys.executable, sys.version.split()[0])"
@@ -87,6 +89,11 @@ jobs:
               env.write(f"GITLEAKS_BIN={binary}\n")
           print(f"{archive.name}: sha256 checked -> GITLEAKS_BIN={binary}")
           PY
+      # The `lint` and `unit` gates run from the project's .venv (ADR-0100); a checkout has none, so it is built
+      # here by the same script a fresh clone uses (scripts/fresh_clone_check.sh) — pinned versions, pip cache.
+      - name: The project's .venv from the pinned ingest/requirements.txt
+        shell: bash
+        run: bash scripts/setup_venv.sh
       - name: Every gate and the drill
         shell: bash
         env:

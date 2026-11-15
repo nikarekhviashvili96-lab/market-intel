@@ -1,0 +1,4 @@
+# Project settings for the Python side (ADR-0100). Dependencies are pinned in ingest/requirements.txt.
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
