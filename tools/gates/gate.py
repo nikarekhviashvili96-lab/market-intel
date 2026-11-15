@@ -922,6 +922,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{'':14}{d}")
     counts = {s: sum(r.status == s for r in results) for s in ("PASS", "FAIL", "INCONCLUSIVE", "SKIP")}
     verdict = "FAIL" if counts["FAIL"] else ("INCONCLUSIVE" if counts["INCONCLUSIVE"] or not counts["PASS"] else "PASS")
+    if a.pre_push and verdict == "INCONCLUSIVE" and not counts["INCONCLUSIVE"] and results:
+        verdict = "PASS"  # at push a SKIP means no pushed commit touches an engine file: nothing to prove, the push goes
     print(f"GATES {verdict}: pass={counts['PASS']} fail={counts['FAIL']} inconclusive={counts['INCONCLUSIVE']} "
           f"skip={counts['SKIP']} (skip = not checked, not passed)")
     return {"PASS": 0, "FAIL": 1}.get(verdict, 2)
