@@ -94,6 +94,16 @@ jobs:
       - name: The project's .venv from the pinned ingest/requirements.txt
         shell: bash
         run: bash scripts/setup_venv.sh
+      # The site (web/, PLAN-0001 T2): Node 24 as on the owner's machine (ADR-0100), packages from the committed
+      # web/package-lock.json, so the `lint` and `unit` gates also run ESLint, tsc and Vitest.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: The site's packages from the pinned web/package-lock.json
+        shell: bash
+        run: bash scripts/setup_web.sh
       - name: Every gate and the drill
         shell: bash
         env:
