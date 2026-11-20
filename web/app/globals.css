@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+/* Dark mode follows <html data-theme="dark">, set before the first paint by layout.tsx. */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* Text colours keep at least 4.5:1 contrast on their background (WCAG AA, REQ-004). */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --muted: #4b5563;
+  --line: #d1d5db;
+  --accent: #1d4ed8;
+  --on-accent: #ffffff;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --muted: #a3a3a3;
+  --line: #3f3f46;
+  --accent: #60a5fa;
+  --on-accent: #0a0a0a;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}

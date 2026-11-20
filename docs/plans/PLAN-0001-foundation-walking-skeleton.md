@@ -84,3 +84,19 @@ Every task is ticked; every gate is green; the `verifier` subagent returns `VERD
 - 2026-11-15 — T3: the owner creates the `ingest_writer` login with its password in the Supabase SQL editor before
   B2a (owner); the first migration does not create it — it fails clearly when the role is missing and only grants
   its rights, so no password ever stands in a migration.
+- 2026-11-20 — T2: `web/.npmrc` (`save-exact=true`) was not written — the harness treats `.npmrc` as a possible
+  secrets file (it can hold npm tokens) and refuses it. Every install used `--save-exact` instead, and
+  `web/scripts/check-exact-versions.mjs`, run first by `npm run lint` (so by the `lint` gate), fails on any version in
+  `web/package.json` that is not exact. `web/package-lock.json` is committed as planned.
+- 2026-11-20 — T2: the scaffold (create-next-app, Next.js 16.4.6) brought `@tailwindcss/turbopack`, which is on neither
+  approved list; it was replaced by the approved `@tailwindcss/postcss` (`web/postcss.config.mjs`). `@types/node` is
+  24.x to match Node 24 (ADR-0100) — vitest 5 refuses the scaffold's 20.x. `@testing-library/dom` arrives only as a
+  peer of the approved `@testing-library/react`, not as a direct dependency.
+- 2026-11-20 — T2: the tab title and header read "Market Intel" (`web/lib/site.ts`), taken from the repository's name
+  because intent.md names no product; the owner can rename it there. The `DGS10` registry entry is a stand-in in
+  `web/lib/registry.ts`, its texts from [[fred]]; T7 replaces it with the database registry. The page reads the T1
+  recording on the server (`web/lib/fixture.ts`) with the same `"."` and refusal rules as `ingest/fred.py`.
+- 2026-11-20 — T2: `npm --prefix web run dev` binds `127.0.0.1:3000` itself. CI installs Node 24 and runs
+  `scripts/setup_web.sh` (`npm ci`) before the gates; `lint.sh` / `test.sh` exit 2 (inconclusive) when
+  `web/node_modules` is missing. Deliberate red run done: one Vitest expected date changed → `unit` FAIL, reverted →
+  PASS. The `lint` / `unit` lines in `tools/gates/gates.toml` still say "joins in T2" — a protected file, left as is.

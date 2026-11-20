@@ -14,5 +14,6 @@ cd "$tmp/repo"
 if [ -e .venv ]; then echo "fresh-clone: the clone already has .venv — not a fresh clone" >&2; exit 2; fi
 echo "fresh-clone: $(git log --oneline -1)"
 bash scripts/setup_venv.sh || { echo "fresh-clone: FAIL — setup_venv.sh" >&2; exit 1; }
+bash scripts/setup_web.sh || { echo "fresh-clone: FAIL — setup_web.sh" >&2; exit 1; }
 bash .claude/hooks/py.sh tools/gates/gate.py --only lint,unit || { echo "fresh-clone: FAIL — lint/unit" >&2; exit 1; }
 echo "fresh-clone: PASS — a checkout without .venv gets lint and unit green through scripts/setup_venv.sh"
