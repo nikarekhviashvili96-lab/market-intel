@@ -3,7 +3,7 @@ id: progress
 type: progress
 title: პროგრესი — სად ვართ ახლა და სესიების ჟურნალი
 status: living
-updated: 2026-11-15
+updated: 2026-11-20
 related:
   - "[[plan]]"
   - "[[memory/episodes/INDEX]]"
@@ -17,8 +17,8 @@ related:
 ## ახლა
 
 - **Phase and goal:** F4 — build [[PLAN-0001-foundation-walking-skeleton]] (T1–T9) for [[SPEC-0001-foundation-walking-skeleton]]: DGS10 from FRED → Supabase → one chart, with auth, RLS and sharing rules.
-- **Last done:** T1 merged; engine text English; PLAN-0001 in batches; drill at push and in CI — PRs #7–#10 ([[EP-2026-11-15-876bc843]]).
-- **Next step:** B1 = T2 (web skeleton with the fixture chart) on a new branch from `main`; one branch and PR per batch (B1, B2a, B2b, B3, B4).
+- **Last done:** B1 = T2 merged — the fixture chart page in `web/`, checked by the owner on `127.0.0.1:3000` (PR #12, 2026-11-20).
+- **Next step:** B2a = T3 (live database and pooler proof) after the owner's B2 checklist (D-015); T8 carries three chart items (D-016); ESLint upgrade later (D-017).
 - **Waiting for the owner:** the B2 checklist before B2a (D-015); auto-mode check (D-006); open proposals ([[PROPOSALS]]).
 <!-- auto: current-state:end -->
 
