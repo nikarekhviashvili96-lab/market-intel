@@ -29,11 +29,12 @@ related:
 
 ## შემდეგი
 
-- [ ] D-008 — B1 = PLAN-0001 T2 (PLAN-0001 deviations) — verify: T2's verify line; PR merged after green `gates`
 - [ ] D-010 — B2a = PLAN-0001 T3 alone, after the owner's B2 checklist (D-015) (PLAN-0001 deviations) — verify: T3's verify line; PR merged
 - [ ] D-011 — B2b = PLAN-0001 T4 + T5 (PLAN-0001 deviations) — verify: T4's and T5's verify lines; PR merged
 - [ ] D-012 — B3 = PLAN-0001 T6 + T7 + T8 (PLAN-0001 deviations) — verify: their verify lines; PR merged
+- [ ] D-016 — in T8: y-axis ticks in round steps (0.25 / 0.5 / 1.0), 1D and 1Y change in bp next to the latest value, hover / tap tooltip with date and value (owner, 2026-11-20; PLAN-0001 deviations) — verify: a failing test first for each, then green; the owner sees all three on the phone
 - [ ] D-013 — B4 = PLAN-0001 T9 (PLAN-0001 deviations) — verify: T9's verify line; verifier `VERDICT: pass`
+- [ ] D-017 — later chore: eslint 9.39.5 is deprecated (npm warning, 2026-11-20) — move `web/` to a supported ESLint with a matching `eslint-config-next`, after the owner's yes to the install (owner, 2026-11-20) — verify: `npm --prefix web ci` prints no ESLint deprecation; `lint` gate green
 <!-- auto: todo-now:end -->
 
 ## შენ გელოდება
@@ -44,6 +45,7 @@ related:
 
 ## დასრულებული
 
+- [x] D-008 — B1 = PLAN-0001 T2 — PR #12 merged after green `gates`; the owner checked the page locally ✓ 2026-11-20 · 2756a3e
 - [x] D-009 — push `chore/session-close-2026-11-15` and merge its PR (owner, 2026-11-15) — PR #6 merged ✓ 2026-11-15 · 0817545
 - [x] D-014 — `gh auth login` in the browser (P-010, the owner's step) ✓ 2026-11-15 · owner
 
